@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
+import sql from '../db.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -47,6 +48,7 @@ export default {
                 moderator: interaction.user,
                 reason: reason,
             });
+
 
         } catch (error) {
             console.error(error);

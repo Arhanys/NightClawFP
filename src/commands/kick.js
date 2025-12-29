@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
+import sql from '../db.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -35,6 +36,12 @@ export default {
                 moderator: interaction.user,
                 reason: reason
             });
+
+            // Save to database
+            await sql`
+                INSERT INTO mod_logs (action, target_id, moderator_id, reason, created_at) 
+                VALUES ('Kick', ${member.user.id}, ${interaction.user.id}, ${reason}, NOW())
+            `;
         } catch (error) {
             console.error(error);
             return interaction.reply({ content: "Failed to kick the member.", ephemeral: true });

@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
+import sql from '../db.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -10,8 +11,18 @@ export default {
                   .setRequired(true)
         )
         .addStringOption(option =>
-            option.setName("image_url")
-                  .setDescription("Image URL for the embed")
+            option.setName("image_url_1")
+                  .setDescription("First image URL (Kiss option)")
+                  .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName("image_url_2")
+                  .setDescription("Second image URL (Marry option)")
+                  .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName("image_url_3")
+                  .setDescription("Third image URL (Kill option)")
                   .setRequired(true)
         )
         .addStringOption(option =>
@@ -22,15 +33,20 @@ export default {
 
     async execute(interaction) {
         const text = interaction.options.getString("text");
-        const imageUrl = interaction.options.getString("image_url");
+        const imageUrl1 = interaction.options.getString("image_url_1");
+        const imageUrl2 = interaction.options.getString("image_url_2");
+        const imageUrl3 = interaction.options.getString("image_url_3");
         const scheduleDate = interaction.options.getString("schedule_date");
 
-        // Validate image URL if provided
-        if (imageUrl && !isValidUrl(imageUrl)) {
-            return interaction.reply({ 
-                content: "❌ Please provide a valid image URL.", 
-                ephemeral: true 
-            });
+        // Validate all image URLs
+        const imageUrls = [imageUrl1, imageUrl2, imageUrl3];
+        for (let i = 0; i < imageUrls.length; i++) {
+            if (!isValidUrl(imageUrls[i])) {
+                return interaction.reply({ 
+                    content: `❌ Image URL ${i + 1} is not valid. Please provide a valid image URL.`, 
+                    ephemeral: true 
+                });
+            }
         }
 
         // Validate and parse schedule date if provided
@@ -51,11 +67,13 @@ export default {
                 .setTitle("💋 Kiss, Marry, Kill 💍")
                 .setDescription(text)
                 .setColor(0xFF69B4) // Hot pink color
+                .addFields(
+                    { name: "💋 Kiss", value: "[Image 1](" + imageUrl1 + ")", inline: true },
+                    { name: "💍 Marry", value: "[Image 2](" + imageUrl2 + ")", inline: true },
+                    { name: "🔪 Kill", value: "[Image 3](" + imageUrl3 + ")", inline: true }
+                )
+                .setImage(imageUrl1) // Show first image as main
                 .setTimestamp();
-
-            if (imageUrl) {
-                embed.setImage(imageUrl);
-            }
 
             if (scheduledTime) {
                 embed.addFields({
@@ -67,14 +85,11 @@ export default {
 
             embed.setFooter({ text: "React with 💋 Kiss | 💍 Marry | 🔪 Kill" });
 
-            // TODO: Save to database when ready
-            // await saveKMKToDatabase({
-            //     text: text,
-            //     imageUrl: imageUrl,
-            //     scheduledTime: scheduledTime,
-            //     authorId: interaction.user.id,
-            //     channelId: interaction.channel.id
-            // });
+            // Save to database
+            await sql`
+                INSERT INTO kmk_posts (text, image_url, image_url_2, image_url_3, scheduled_time, author_id, created_at) 
+                VALUES (${text}, ${imageUrl1}, ${imageUrl2}, ${imageUrl3}, ${scheduledTime}, ${interaction.user.id}, NOW())
+            `;
 
             if (scheduledTime) {
                 // If scheduled, just confirm the scheduling

@@ -6,6 +6,7 @@ import {
     ActionRowBuilder,
     EmbedBuilder
 } from "discord.js";
+import sql from '../db.js';
 
 export async function handleConfessionButton(interaction) {
     const { customId } = interaction;
@@ -70,8 +71,11 @@ export async function handleConfessionModal(interaction) {
             ephemeral: true 
         });
 
-        // TODO: Log to moderator channel when database is ready
-        // await logConfession(user, confessionText, isAnonymous, guild);
+        // Save to database
+        await sql`
+            INSERT INTO confessions (text, is_anonymous, author_id, created_at) 
+            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, NOW())
+        `;
     }
 }
 

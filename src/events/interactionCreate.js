@@ -1,6 +1,7 @@
 // src/events/interactionCreate.js
 import { handleTicketButton, handleTicketModal } from "../utils/ticketHandler.js";
 import { handleConfessionButton, handleConfessionModal } from "../utils/confessionHandler.js";
+import { handleSanctionButton, handleSanctionModal } from "../utils/sanctionHandler.js";
 
 export default {
     name: "interactionCreate",
@@ -25,6 +26,10 @@ export default {
                 else if (interaction.customId.startsWith('confession_')) {
                     await handleConfessionButton(interaction);
                 }
+                // Handle sanction detail buttons
+                else if (interaction.customId.startsWith('sanction_')) {
+                    await handleSanctionButton(interaction);
+                }
             }
             // Modals
             else if (interaction.isModalSubmit()) {
@@ -35,6 +40,10 @@ export default {
                 // Handle confession modals
                 else if (interaction.customId.startsWith('confession_')) {
                     await handleConfessionModal(interaction);
+                }
+                // Handle sanction modals
+                else if (interaction.customId.startsWith('sanction_')) {
+                    await handleSanctionModal(interaction);
                 }
             }
         } catch (err) {
