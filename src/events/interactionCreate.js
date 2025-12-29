@@ -1,0 +1,41 @@
+// src/events/interactionCreate.js
+import { handleTicketButton, handleTicketModal } from "../utils/ticketHandler.js";
+
+export default {
+    name: "interactionCreate",
+
+    async execute(interaction, client) {
+        try {
+            // Slash commands
+            if (interaction.isChatInputCommand()) {
+                const command = client.commands.get(interaction.commandName);
+                if (!command) return;
+
+                await command.execute(interaction, client);
+            }
+
+            // Buttons
+            else if (interaction.isButton()) {
+                await handleTicketButton(interaction);
+            }
+            else if (interaction.isModalSubmit()) {
+                await handleTicketModal(interaction);
+            }
+        } catch (err) {
+            console.error(err);
+
+            // Safe error handling
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({
+                    content: "❌ An error occurred while processing this interaction.",
+                    ephemeral: true
+                });
+            } else {
+                await interaction.followUp({
+                    content: "❌ An unexpected error occurred.",
+                    ephemeral: true
+                });
+            }
+        }
+    }
+};
