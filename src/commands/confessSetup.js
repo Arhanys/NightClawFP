@@ -11,27 +11,27 @@ export default {
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId('confession_anonymous')
-        .setLabel('🎭 Anonymous Confession')
+        .setLabel('🎭 Confession anonyme')
         .setStyle(ButtonStyle.Secondary)
         .setEmoji('🎭'),
       new ButtonBuilder()
         .setCustomId('confession_public')
-        .setLabel('💬 Public Confession')
+        .setLabel('💬 Confession publique')
         .setStyle(ButtonStyle.Primary)
         .setEmoji('💬')
     );
 
     // Create the embed
     const embed = new EmbedBuilder()
-      .setTitle("💭 Confession Box")
-      .setDescription(`Share what's on your mind!
+      .setTitle("💭 Boîte à Confessions")
+      .setDescription(`Partage tes pensées en toute confidentialité ou publiquement !
       
-      🎭 **Anonymous Confession** - Your identity will remain hidden
-      💬 **Public Confession** - Your name will be shown
+      🎭 **Confession anonyme** - Ton identité restera cachée
+      💬 **Confession publique** - Ton nom sera affiché
       
-      All confessions are reviewed by moderators before posting.`)
+      Toutes les confessions sont examinées par les modérateurs avant publication.`)
       .setColor(0x7289DA) // Discord blurple
-      .setFooter({ text: "Confession Panel • Be respectful!" })
+      .setFooter({ text: "Panneau de Confession • Soyez respectueux !" })
       .setTimestamp();
 
     // Send the permanent message
@@ -40,6 +40,6 @@ export default {
       components: [row]
     });
 
-    await interaction.reply({ content: "✅ Confession panel has been created!", ephemeral: true });
+    await interaction.reply({ content: "✅ Le panneau de confession a été créé !", ephemeral: true });
   }
 };

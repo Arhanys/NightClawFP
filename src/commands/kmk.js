@@ -62,37 +62,14 @@ export default {
         }
 
         try {
-            // Create the embed
-            const embed = new EmbedBuilder()
-                .setTitle("💋 Kiss, Marry, Kill 💍")
-                .setDescription(text)
-                .setColor(0xFF69B4) // Hot pink color
-                .addFields(
-                    { name: "💋 Kiss", value: "[Image 1](" + imageUrl1 + ")", inline: true },
-                    { name: "💍 Marry", value: "[Image 2](" + imageUrl2 + ")", inline: true },
-                    { name: "🔪 Kill", value: "[Image 3](" + imageUrl3 + ")", inline: true }
-                )
-                .setImage(imageUrl1) // Show first image as main
-                .setTimestamp();
-
             if (scheduledTime) {
-                embed.addFields({
-                    name: "⏰ Scheduled for",
-                    value: `<t:${Math.floor(scheduledTime.getTime() / 1000)}:F>`,
-                    inline: true
-                });
-            }
+                // Save to database only if scheduled
+                await sql`
+                    INSERT INTO kmk_posts (text, image_url, image_url_2, image_url_3, scheduled_time, author_id, created_at) 
+                    VALUES (${text}, ${imageUrl1}, ${imageUrl2}, ${imageUrl3}, ${scheduledTime}, ${interaction.user.id}, NOW())
+                `;
 
-            embed.setFooter({ text: "React with 💋 Kiss | 💍 Marry | 🔪 Kill" });
-
-            // Save to database
-            await sql`
-                INSERT INTO kmk_posts (text, image_url, image_url_2, image_url_3, scheduled_time, author_id, created_at) 
-                VALUES (${text}, ${imageUrl1}, ${imageUrl2}, ${imageUrl3}, ${scheduledTime}, ${interaction.user.id}, NOW())
-            `;
-
-            if (scheduledTime) {
-                // If scheduled, just confirm the scheduling
+                // Confirm the scheduling
                 await interaction.reply({
                     content: `✅ KMK scheduled for <t:${Math.floor(scheduledTime.getTime() / 1000)}:F>`,
                     ephemeral: true
@@ -101,16 +78,45 @@ export default {
                 // TODO: Implement scheduler when database is ready
                 // scheduleKMK(scheduledTime, embed, interaction.channel);
             } else {
-                // Send immediately
-                const message = await interaction.reply({ 
-                    embeds: [embed],
-                    fetchReply: true 
-                });
+                // Send immediately - create main embed first
+                const mainEmbed = new EmbedBuilder()
+                    .setTitle("💋 Kiss, Marry, Kill 💍")
+                    .setDescription(text)
+                    .setColor(0xFF69B4)
+                    .setTimestamp()
+                    .setFooter({ text: "Réagis avec l'emoji de ton choix : 💋 Kiss | 💍 Marry | 🔪 Kill" });
 
-                // Add reactions
-                await message.react('💋'); // Kiss
-                await message.react('💍'); // Marry  
-                await message.react('🔪'); // Kill
+                await interaction.reply({ embeds: [mainEmbed] });
+
+                // Send the 3 images as separate messages with ALL reactions on each
+                const channel = interaction.channel;
+
+                // Image 1 - with all 3 reactions
+                const img1Embed = new EmbedBuilder()
+                    .setImage(imageUrl1)
+                    .setColor(0xFF69B4);
+                const img1Msg = await channel.send({ embeds: [img1Embed] });
+                await img1Msg.react('💋');
+                await img1Msg.react('💍');
+                await img1Msg.react('🔪');
+
+                // Image 2 - with all 3 reactions
+                const img2Embed = new EmbedBuilder()
+                    .setImage(imageUrl2)
+                    .setColor(0xFF69B4);
+                const img2Msg = await channel.send({ embeds: [img2Embed] });
+                await img2Msg.react('💋');
+                await img2Msg.react('💍');
+                await img2Msg.react('🔪');
+
+                // Image 3 - with all 3 reactions
+                const img3Embed = new EmbedBuilder()
+                    .setImage(imageUrl3)
+                    .setColor(0xFF69B4);
+                const img3Msg = await channel.send({ embeds: [img3Embed] });
+                await img3Msg.react('💋');
+                await img3Msg.react('💍');
+                await img3Msg.react('🔪');
             }
 
         } catch (error) {
@@ -143,6 +149,8 @@ function parseScheduleDate(dateString) {
         if (!match) return null;
         
         const [, year, month, day, hour, minute] = match;
+        
+        // Create date normally - let PostgreSQL handle timezone conversion
         const date = new Date(year, month - 1, day, hour, minute);
         
         // Check if date is valid and in the future

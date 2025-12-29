@@ -18,13 +18,13 @@ export async function handleConfessionButton(interaction) {
         // Create modal for confession
         const modal = new ModalBuilder()
             .setCustomId(`confession_modal_${isAnonymous ? 'anon' : 'public'}`)
-            .setTitle(isAnonymous ? '🎭 Anonymous Confession' : '💬 Public Confession');
+            .setTitle(isAnonymous ? '🎭 Confession anonyme' : '💬 Confession publique');
 
         const confessionInput = new TextInputBuilder()
             .setCustomId('confession_text')
-            .setLabel("Your confession")
+            .setLabel("Ta confession")
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Share what's on your mind...")
+            .setPlaceholder("Partage ce que tu as sur le cœur...")
             .setRequired(true)
             .setMinLength(10)
             .setMaxLength(1000);
@@ -46,7 +46,7 @@ export async function handleConfessionModal(interaction) {
 
         // Create confession embed
         const embed = new EmbedBuilder()
-            .setTitle(isAnonymous ? "🎭 Anonymous Confession" : "💬 Public Confession")
+            .setTitle(isAnonymous ? "🎭 Confession anonyme" : "💬 Confession publique")
             .setDescription(confessionText)
             .setColor(isAnonymous ? 0x36393F : 0x7289DA) // Dark for anon, blurple for public
             .setTimestamp();
@@ -59,7 +59,7 @@ export async function handleConfessionModal(interaction) {
         }
 
         embed.setFooter({ 
-            text: isAnonymous ? "Anonymous • ID: " + Date.now() : "Public Confession" 
+            text: isAnonymous ? "Anonyme • ID: " + Date.now() : "Confession publique de " + user.tag
         });
 
         // Send confession to the same channel
@@ -67,7 +67,7 @@ export async function handleConfessionModal(interaction) {
 
         // Confirm to user
         await interaction.reply({ 
-            content: `✅ Your ${isAnonymous ? 'anonymous' : 'public'} confession has been posted!`,
+            content: `✅ Ta confession ${isAnonymous ? 'anonyme' : 'publique'} a été publiée !`,
             ephemeral: true 
         });
 
