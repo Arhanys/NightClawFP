@@ -2,6 +2,17 @@
 import { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from "discord.js";
 import sql from '../db.js';
 
+export async function logToDatabase({ guild_id, type, user_id, moderator_id, reason, expires_at }) {
+    try {
+        await sql`
+            INSERT INTO sanctions (guild_id, type, user_id, moderator_id, reason, expires_at, created_at) 
+            VALUES (${guild_id}, ${type}, ${user_id}, ${moderator_id}, ${reason}, ${expires_at}, NOW())
+        `;
+    } catch (error) {
+        console.error('Error logging to database:', error);
+    }
+}
+
 export async function handleSanctionButton(interaction) {
     const { customId } = interaction;
 
@@ -71,7 +82,7 @@ export async function handleSanctionModal(interaction) {
         try {
             // Get total count first
             const totalResult = await sql`
-                SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${userId}
+                SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${userId} AND guild_id = ${interaction.guild.id}
             `;
             const totalSanctions = parseInt(totalResult[0].total);
 
@@ -86,7 +97,7 @@ export async function handleSanctionModal(interaction) {
             const sanction = await sql`
                 SELECT id, action, moderator_id, reason, created_at, target_id
                 FROM mod_logs 
-                WHERE target_id = ${userId} 
+                WHERE target_id = ${userId} AND guild_id = ${interaction.guild.id}
                 ORDER BY created_at DESC
                 LIMIT 1 OFFSET ${sanctionNumber - 1}
             `;

@@ -58,11 +58,11 @@ async function deployCommands() {
         const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
         await rest.put(
-            Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
+            Routes.applicationCommands(process.env.CLIENT_ID),
             { body: commands }
         );
 
-        console.log("✅ Commands registered automatically.");
+        console.log("✅ Global commands registered automatically.");
     } catch (err) {
         console.error("❌ Auto-deploy failed:", err);
     }

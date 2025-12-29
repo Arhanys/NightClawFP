@@ -29,7 +29,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
     try {
         // Get total count
         const totalResult = await sql`
-            SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${targetUser.id}
+            SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${targetUser.id} AND guild_id = ${interaction.guild.id}
         `;
         const totalSanctions = parseInt(totalResult[0].total);
         const totalPages = Math.ceil(totalSanctions / SANCTIONS_PER_PAGE);
@@ -38,7 +38,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
         const sanctions = await sql`
             SELECT id, action, moderator_id, reason, created_at 
             FROM mod_logs 
-            WHERE target_id = ${targetUser.id} 
+            WHERE target_id = ${targetUser.id} AND guild_id = ${interaction.guild.id}
             ORDER BY created_at DESC
             LIMIT ${SANCTIONS_PER_PAGE} OFFSET ${offset}
         `;

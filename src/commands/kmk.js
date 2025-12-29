@@ -65,8 +65,8 @@ export default {
             if (scheduledTime) {
                 // Save to database only if scheduled
                 await sql`
-                    INSERT INTO kmk_posts (text, image_url, image_url_2, image_url_3, scheduled_time, author_id, created_at) 
-                    VALUES (${text}, ${imageUrl1}, ${imageUrl2}, ${imageUrl3}, ${scheduledTime}, ${interaction.user.id}, NOW())
+                    INSERT INTO kmk_posts (text, image_url, image_url_2, image_url_3, scheduled_time, author_id, guild_id, created_at) 
+                    VALUES (${text}, ${imageUrl1}, ${imageUrl2}, ${imageUrl3}, ${scheduledTime}, ${interaction.user.id}, ${interaction.guild.id}, NOW())
                 `;
 
                 // Confirm the scheduling

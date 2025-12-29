@@ -73,8 +73,8 @@ export async function handleConfessionModal(interaction) {
 
         // Save to database
         await sql`
-            INSERT INTO confessions (text, is_anonymous, author_id, created_at) 
-            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, NOW())
+            INSERT INTO confessions (text, is_anonymous, author_id, guild_id, created_at) 
+            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, ${interaction.guild.id}, NOW())
         `;
     }
 }

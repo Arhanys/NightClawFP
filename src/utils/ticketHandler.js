@@ -8,6 +8,7 @@ import {
     TextInputStyle, 
     EmbedBuilder 
 } from "discord.js";
+import { getServerSettings } from './serverSettings.js';
 
 export async function handleTicketButton(interaction) {
     const { customId, guild, user } = interaction;
@@ -58,21 +59,46 @@ export async function handleTicketModal(interaction) {
     const reason = interaction.fields.getTextInputValue('ticket_reason');
     const user = interaction.user;
     const guild = interaction.guild;
+    const guildId = guild.id;
+
+    // Get server settings
+    const settings = await getServerSettings(guildId);
 
     // Find category
     const category = guild.channels.cache.find(c => c.name === "Support 🤝" && c.type === 4);
     if (!category) return interaction.reply({ content: "⚠ Ticket category not found!", ephemeral: true });
+
+    // Build permission overwrites
+    const permissionOverwrites = [
+        { 
+            id: guild.id, 
+            deny: ['ViewChannel', 'SendMessages'] 
+        },
+        { 
+            id: user.id, 
+            allow: ['ViewChannel', 'SendMessages'], 
+            deny: ['ManageChannels'] 
+        }
+    ];
+
+    // Add moderator role permissions if configured
+    if (settings.mod_role_id) {
+        // Verify the role exists and is cached
+        const modRole = guild.roles.cache.get(settings.mod_role_id);
+        if (modRole) {
+            permissionOverwrites.push({
+                id: settings.mod_role_id,
+                allow: ['ViewChannel', 'SendMessages', 'ManageChannels']
+            });
+        }
+    }
 
     // Create ticket channel
     const ticketChannel = await guild.channels.create({
         name: `ticket-${user.username}`.toLowerCase(),
         type: 0, // Text channel
         parent: category.id,
-        permissionOverwrites: [
-            { id: guild.id, deny: ['ViewChannel', 'SendMessages'] },
-            { id: user.id, allow: ['ViewChannel', 'SendMessages'], deny: ['ManageChannels'] },
-            { id: process.env.MOD_ROLE_ID, allow: ['ViewChannel', 'SendMessages', 'ManageChannels'] }
-        ]
+        permissionOverwrites: permissionOverwrites
     });
 
     // Embed for the ticket
@@ -95,6 +121,14 @@ export async function handleTicketModal(interaction) {
     );
 
     await ticketChannel.send({ embeds: [embed], components: [closeRow] });
-    await ticketChannel.send(`<@&${process.env.MOD_ROLE_ID}>`);
+    
+    // Ping moderators if role is configured
+    if (settings.mod_role_id) {
+        const modRole = guild.roles.cache.get(settings.mod_role_id);
+        if (modRole) {
+            await ticketChannel.send(`<@&${settings.mod_role_id}>`);
+        }
+    }
+    
     await interaction.reply({ content: `✅ Your ticket has been created: ${ticketChannel}`, ephemeral: true });
 }
