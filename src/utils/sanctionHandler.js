@@ -2,11 +2,11 @@
 import { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from "discord.js";
 import sql from '../db.js';
 
-export async function logToDatabase({ guild_id, type, user_id, moderator_id, reason, expires_at }) {
+export async function logToDatabase({ guild_id, action, target_id, moderator_id, reason }) {
     try {
         await sql`
-            INSERT INTO sanctions (guild_id, type, user_id, moderator_id, reason, expires_at, created_at) 
-            VALUES (${guild_id}, ${type}, ${user_id}, ${moderator_id}, ${reason}, ${expires_at}, NOW())
+            INSERT INTO mod_logs (guild_id, action, target_id, moderator_id, reason, created_at) 
+            VALUES (${guild_id}, ${action}, ${target_id}, ${moderator_id}, ${reason}, NOW())
         `;
     } catch (error) {
         console.error('Error logging to database:', error);

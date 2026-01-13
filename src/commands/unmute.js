@@ -41,11 +41,11 @@ export default {
             
             // Update database to mark mute as ended
             await sql`
-                UPDATE sanctions 
+                UPDATE mod_logs 
                 SET expires_at = NOW() 
                 WHERE guild_id = ${guildId}
-                AND user_id = ${member.user.id}
-                AND type = 'mute'
+                AND target_id = ${member.user.id}
+                AND action = 'mute'
                 AND (expires_at IS NULL OR expires_at > NOW())
             `;
             

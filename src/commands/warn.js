@@ -2,22 +2,23 @@ import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
+import sql from '../db.js';
 
 export default {
     data: new SlashCommandBuilder()
-        .setName("ban")
-        .setDescription("Ban a member from the server")
+        .setName("warn")
+        .setDescription("Issue a warning to a member")
         .addUserOption(option =>
             option.setName("member")
-                  .setDescription("Member to ban")
+                  .setDescription("Member to warn")
                   .setRequired(true)
         )
         .addStringOption(option =>
             option.setName("reason")
-                  .setDescription("Reason for the ban")
+                  .setDescription("Reason for the warning")
                   .setRequired(true)
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
     async execute(interaction) {
         const member = interaction.options.getMember("member");
@@ -28,35 +29,59 @@ export default {
         const hasPerms = await hasModeratorRole(interaction.member, guildId);
         if (!hasPerms) {
             return interaction.reply({
-                content: '❌ You do not have permission to ban members.',
+                content: '❌ You do not have permission to warn members.',
                 ephemeral: true
             });
         }
 
-        if (!member.bannable)
-            return interaction.reply({ content: "I cannot ban this member.", ephemeral: true });
+        if (!member) {
+            return interaction.reply({ content: "Member not found.", ephemeral: true });
+        }
 
         try {
-            await member.ban({ reason });
-            
             // Log to database
             await logToDatabase({
                 guild_id: guildId,
-                action: 'ban',
+                action: 'warn',
                 target_id: member.user.id,
                 moderator_id: interaction.user.id,
                 reason: reason,
             });
 
-            await interaction.reply({ content: `⛔ ${member.user.tag} has been banned.\n📌 Reason: ${reason}`, ephemeral: true });
+            // Increment warnings count in users table
+            await sql`
+                INSERT INTO users (id, username, warnings, guild_id, created_at) 
+                VALUES (${member.user.id}, ${member.user.username}, 1, ${guildId}, NOW())
+                ON CONFLICT (id, guild_id) DO UPDATE SET 
+                warnings = users.warnings + 1,
+                username = ${member.user.username}
+            `;
+
+            // Get updated warning count
+            const [userRecord] = await sql`
+                SELECT warnings FROM users WHERE id = ${member.user.id} AND guild_id = ${guildId}
+            `;
+            const warningCount = userRecord?.warnings || 0;
+
+            let replyContent = `⚠️ ${member.user.tag} has been warned.\n📌 Reason: ${reason}\n🔢 Total warnings: ${warningCount}`;
+            
+            if (warningCount >= 3) {
+                replyContent += '\n⚠️ **Warning:** This user now has 3+ warnings. Consider issuing a ban.';
+            }
+            
+            await interaction.reply({ 
+                content: replyContent, 
+                ephemeral: true 
+            });
 
             // Create success embed
             const successEmbed = new EmbedBuilder()
-                .setTitle('🔨 User Banned')
-                .setColor(0xFF0000)
+                .setTitle('⚠️ User Warned')
+                .setColor(0xFFFF00)
                 .addFields(
                     { name: 'User', value: `${member.user.tag} (${member.user.id})`, inline: true },
                     { name: 'Moderator', value: `${interaction.user.tag}`, inline: true },
+                    { name: 'Total Warnings', value: warningCount.toString(), inline: true },
                     { name: 'Reason', value: reason, inline: false }
                 )
                 .setTimestamp();
@@ -71,7 +96,7 @@ export default {
             } else {
                 // Fallback to old log system
                 await sendLog(interaction.guild, {
-                    action: "Ban",
+                    action: "Warn",
                     target: member.user,
                     moderator: interaction.user,
                     reason: reason
@@ -79,7 +104,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: "Failed to ban the member.", ephemeral: true });
+            return interaction.reply({ content: "Failed to warn the member.", ephemeral: true });
         }
     }
 };

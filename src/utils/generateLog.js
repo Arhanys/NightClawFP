@@ -1,12 +1,19 @@
 import { EmbedBuilder } from "discord.js";
+import { getServerSettings } from "./serverSettings";
 
 /**
  * Logs a moderation action to the log channel.
  */
 export async function sendLog(guild, { action, target, moderator, reason, extra }) {
     try {
-        const logChannelId = process.env.LOG_CHANNEL_ID;
-        const channel = guild.channels.cache.get(logChannelId);
+        const settings = await getServerSettings(guild.id);
+
+        if (!settings.log_channel_id) {
+            console.log("No log channel configured for guild:", guild.id);
+            return;
+        }
+        
+        const channel = guild.channels.cache.get(settings.log_channel_id);
 
         if (!channel) {
             console.warn("⚠ No log channel found.");
@@ -18,9 +25,19 @@ export async function sendLog(guild, { action, target, moderator, reason, extra 
         const moderatorValue = moderator ? `<@${moderator.id}> (${moderator.tag})` : "Unknown moderator";
         const reasonValue = reason || "No reason provided";
 
+        function getActionColor(action) {
+    const colors = {
+        'Ban': 0xFF0000,
+        'Kick': 0xFF7F00,
+        'Warn': 0xFFFF00,
+        'Mute': 0x808080,
+        'Unmute': 0x00FF00
+    };
+    return colors[action] || 0x0099FF;
+}
         const embed = new EmbedBuilder()
             .setTitle(`🔧 Moderation | ${action}`)
-            .setColor("Red")
+            .setColor(getActionColor(action))
             .setTimestamp()
             .addFields(
                 { name: "👤 Target", value: targetValue },

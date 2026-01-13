@@ -2,7 +2,6 @@ import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
-import sql from '../db.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -43,11 +42,10 @@ export default {
             // Log to database
             await logToDatabase({
                 guild_id: guildId,
-                type: 'kick',
-                user_id: member.user.id,
+                action: 'kick',
+                target_id: member.user.id,
                 moderator_id: interaction.user.id,
                 reason: reason,
-                expires_at: null
             });
 
             await interaction.reply({ content: `👢 ${member.user.tag} has been kicked.\n📌 Reason: ${reason}`, ephemeral: true });
@@ -79,12 +77,6 @@ export default {
                     reason: reason
                 });
             }
-
-            // Also keep old database for compatibility (will be removed later)
-            await sql`
-                INSERT INTO mod_logs (action, target_id, moderator_id, guild_id, reason, created_at) 
-                VALUES ('Kick', ${member.user.id}, ${interaction.user.id}, ${interaction.guild.id}, ${reason}, NOW())
-            `;
         } catch (error) {
             console.error(error);
             return interaction.reply({ content: "Failed to kick the member.", ephemeral: true });
