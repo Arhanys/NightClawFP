@@ -1,5 +1,5 @@
 import { EmbedBuilder } from "discord.js";
-import { getServerSettings } from "./serverSettings";
+import { getServerSettings } from "./serverSettings.js";
 
 /**
  * Logs a moderation action to the log channel.
