@@ -65,7 +65,7 @@ export default {
             // Create success embed
             const successEmbed = new EmbedBuilder()
                 .setTitle('🔇 User Muted')
-                .setColor(0xFFFF00)
+                .setColor(0x808080)
                 .addFields(
                     { name: 'User', value: `${member.user.tag} (${member.user.id})`, inline: true },
                     { name: 'Moderator', value: `${interaction.user.tag}`, inline: true },
