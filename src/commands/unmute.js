@@ -39,15 +39,6 @@ export default {
             // Remove timeout
             await member.timeout(null);
             
-            // Update database to mark mute as ended
-            await sql`
-                UPDATE mod_logs 
-                SET expires_at = NOW() 
-                WHERE guild_id = ${guildId}
-                AND target_id = ${member.user.id}
-                AND action = 'mute'
-                AND (expires_at IS NULL OR expires_at > NOW())
-            `;
             
             await interaction.reply({ content: `🔊 ${member.user.tag} has been unmuted.`, ephemeral: true });
 

@@ -48,14 +48,23 @@ export default {
                 reason: reason,
             });
 
-            // Increment warnings count in users table
-            await sql`
-                INSERT INTO users (id, username, warnings, guild_id, created_at) 
-                VALUES (${member.user.id}, ${member.user.username}, 1, ${guildId}, NOW())
-                ON CONFLICT (id, guild_id) DO UPDATE SET 
-                warnings = users.warnings + 1,
-                username = ${member.user.username}
+            // Increment warnings count in users table - alternative approach
+            const existingUser = await sql`
+                SELECT warnings FROM users WHERE id = ${member.user.id} AND guild_id = ${guildId}
             `;
+            
+            if (existingUser.length > 0) {
+                await sql`
+                    UPDATE users 
+                    SET warnings = warnings + 1, username = ${member.user.username}
+                    WHERE id = ${member.user.id} AND guild_id = ${guildId}
+                `;
+            } else {
+                await sql`
+                    INSERT INTO users (id, guild_id, username, warnings, created_at) 
+                    VALUES (${member.user.id}, ${guildId}, ${member.user.username}, 1, NOW())
+                `;
+            }
 
             // Get updated warning count
             const [userRecord] = await sql`
