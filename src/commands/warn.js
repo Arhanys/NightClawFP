@@ -2,6 +2,7 @@ import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
+import { t } from '../utils/i18n.js';
 import sql from '../db.js';
 
 export default {
@@ -25,21 +26,22 @@ export default {
         const reason = interaction.options.getString("reason") || "No reason provided";
         const guildId = interaction.guild.id;
 
-        // Check if user has permission using server-specific settings
+        const settings = await getServerSettings(guildId);
+        const lang = settings.language || 'en';
+
         const hasPerms = await hasModeratorRole(interaction.member, guildId);
         if (!hasPerms) {
             return interaction.reply({
-                content: '❌ You do not have permission to warn members.',
+                content: t('warn_no_permission', lang),
                 ephemeral: true
             });
         }
 
         if (!member) {
-            return interaction.reply({ content: "Member not found.", ephemeral: true });
+            return interaction.reply({ content: t('member_not_found', lang), ephemeral: true });
         }
 
         try {
-            // Log to database
             await logToDatabase({
                 guild_id: guildId,
                 action: 'warn',
@@ -48,62 +50,62 @@ export default {
                 reason: reason,
             });
 
-            // Increment warnings count in users table - alternative approach
             const existingUser = await sql`
                 SELECT warnings FROM users WHERE id = ${member.user.id} AND guild_id = ${guildId}
             `;
-            
+
             if (existingUser.length > 0) {
                 await sql`
-                    UPDATE users 
+                    UPDATE users
                     SET warnings = warnings + 1, username = ${member.user.username}
                     WHERE id = ${member.user.id} AND guild_id = ${guildId}
                 `;
             } else {
                 await sql`
-                    INSERT INTO users (id, guild_id, username, warnings, created_at) 
+                    INSERT INTO users (id, guild_id, username, warnings, created_at)
                     VALUES (${member.user.id}, ${guildId}, ${member.user.username}, 1, NOW())
                 `;
             }
 
-            // Get updated warning count
             const [userRecord] = await sql`
                 SELECT warnings FROM users WHERE id = ${member.user.id} AND guild_id = ${guildId}
             `;
             const warningCount = userRecord?.warnings || 0;
 
-            let replyContent = `⚠️ ${member.user.tag} has been warned.\n📌 Reason: ${reason}\n🔢 Total warnings: ${warningCount}`;
-            
-            if (warningCount >= 3) {
-                replyContent += '\n⚠️ **Warning:** This user now has 3+ warnings. Consider issuing a ban.';
-            }
-            
-            await interaction.reply({ 
-                content: replyContent, 
-                ephemeral: true 
-            });
+            let replyContent = t('warn_success', lang, { tag: member.user.tag, reason, count: warningCount });
 
-            // Create success embed
+            if (warningCount >= 3) {
+                replyContent += t('warn_threshold', lang);
+            }
+
+            try {
+                const dmEmbed = new EmbedBuilder()
+                    .setTitle(t('dm_warn_title', lang))
+                    .setDescription(t('dm_warn_body', lang, { server: interaction.guild.name, reason, count: warningCount }))
+                    .setColor(0xFFFF00)
+                    .setTimestamp();
+                await member.user.send({ embeds: [dmEmbed] });
+            } catch {}
+
+            await interaction.reply({ content: replyContent, ephemeral: true });
+
             const successEmbed = new EmbedBuilder()
-                .setTitle('⚠️ User Warned')
+                .setTitle(t('warn_embed_title', lang))
                 .setColor(0xFFFF00)
                 .addFields(
-                    { name: 'User', value: `${member.user.tag} (${member.user.id})`, inline: true },
-                    { name: 'Moderator', value: `${interaction.user.tag}`, inline: true },
-                    { name: 'Total Warnings', value: warningCount.toString(), inline: true },
-                    { name: 'Reason', value: reason, inline: false }
+                    { name: t('field_user', lang), value: `${member.user.tag} (${member.user.id})`, inline: true },
+                    { name: t('field_moderator', lang), value: `${interaction.user.tag}`, inline: true },
+                    { name: t('field_total_warnings', lang), value: warningCount.toString(), inline: true },
+                    { name: t('field_reason', lang), value: reason, inline: false }
                 )
                 .setTimestamp();
-                
-            // Get server settings and send to log channel if configured
-            const settings = await getServerSettings(guildId);
+
             if (settings.log_channel_id) {
                 const logChannel = interaction.guild.channels.cache.get(settings.log_channel_id);
                 if (logChannel) {
                     await logChannel.send({ embeds: [successEmbed] });
                 }
             } else {
-                // Fallback to old log system
                 await sendLog(interaction.guild, {
                     action: "Warn",
                     target: member.user,
@@ -113,7 +115,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: "Failed to warn the member.", ephemeral: true });
+            return interaction.reply({ content: t('warn_failed', lang), ephemeral: true });
         }
     }
 };

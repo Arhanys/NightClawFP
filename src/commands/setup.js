@@ -1,5 +1,7 @@
 import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.js";
 import sql from '../db.js';
+import { clearServerSettingsCache } from '../utils/serverSettings.js';
+import { t } from '../utils/i18n.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -20,150 +22,150 @@ export default {
                   .setDescription("Channel where confessions will be posted")
                   .setRequired(false)
         )
+        .addStringOption(option =>
+            option.setName("language")
+                  .setDescription("Bot language for this server")
+                  .setRequired(false)
+                  .addChoices(
+                      { name: 'English', value: 'en' },
+                      { name: 'French', value: 'fr' }
+                  )
+        )
+        .addStringOption(option =>
+            option.setName("source_guild")
+                  .setDescription("Guild ID of the main server (set on appeal server)")
+                  .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName("appeal_invite")
+                  .setDescription("Invite URL for the appeal server (set on main server, included in ban DMs)")
+                  .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName("main_invite")
+                  .setDescription("Permanent invite URL for the main server (set on appeal server, sent when appeal is accepted)")
+                  .setRequired(false)
+        )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
         const logChannel = interaction.options.getChannel("log_channel");
         const modRole = interaction.options.getRole("mod_role");
         const confessionChannel = interaction.options.getChannel("confession_channel");
+        const languageOption = interaction.options.getString("language");
+        const sourceGuildOption = interaction.options.getString("source_guild");
+        const appealInviteOption = interaction.options.getString("appeal_invite");
+        const mainInviteOption = interaction.options.getString("main_invite");
 
-        // If no options provided, show current settings
-        if (!logChannel && !modRole && !confessionChannel) {
-            try {
-                const settings = await sql`
-                    SELECT * FROM server_settings WHERE guild_id = ${interaction.guild.id}
-                `;
-
-                const embed = new EmbedBuilder()
-                    .setTitle("🔧 Server Settings")
-                    .setColor(0x7289DA)
-                    .setTimestamp();
-
-                if (settings.length === 0) {
-                    embed.setDescription("❌ No server settings configured yet. Use `/setup` with options to configure.");
-                } else {
-                    const setting = settings[0];
-                    let description = "**Current Configuration:**\n\n";
-                    
-                    if (setting.log_channel_id) {
-                        description += `📋 **Log Channel:** <#${setting.log_channel_id}>\n`;
-                    } else {
-                        description += `📋 **Log Channel:** Not set\n`;
-                    }
-
-                    if (setting.mod_role_id) {
-                        description += `👮 **Moderator Role:** <@&${setting.mod_role_id}>\n`;
-                    } else {
-                        description += `👮 **Moderator Role:** Not set\n`;
-                    }
-
-                    if (setting.confession_channel_id) {
-                        description += `💭 **Confession Channel:** <#${setting.confession_channel_id}>\n`;
-                    } else {
-                        description += `💭 **Confession Channel:** Not set\n`;
-                    }
-
-                    embed.setDescription(description);
-                    embed.setFooter({ text: `Last updated: ${new Date(setting.updated_at).toLocaleString()}` });
-                }
-
-                return interaction.reply({ embeds: [embed], ephemeral: true });
-
-            } catch (error) {
-                console.error('Setup Command Error:', error);
-                return interaction.reply({ 
-                    content: "❌ Failed to retrieve server settings.", 
-                    ephemeral: true 
-                });
-            }
+        // Fetch existing settings to get current language and fill partial updates
+        let existing = {};
+        try {
+            const rows = await sql`SELECT * FROM server_settings WHERE guild_id = ${interaction.guild.id}`;
+            existing = rows[0] || {};
+        } catch (error) {
+            console.error('Setup Command Error:', error);
         }
 
-        try {
-            // Update or insert server settings
-            const updateFields = [];
-            const updateValues = {};
-            
-            if (logChannel) {
-                updateFields.push("log_channel_id = ${logChannelId}");
-                updateValues.logChannelId = logChannel.id;
-            }
-            
-            if (modRole) {
-                updateFields.push("mod_role_id = ${modRoleId}");
-                updateValues.modRoleId = modRole.id;
-            }
-            
-            if (confessionChannel) {
-                updateFields.push("confession_channel_id = ${confessionChannelId}");
-                updateValues.confessionChannelId = confessionChannel.id;
-            }
+        const currentLang = existing.language || 'en';
 
-            // Use PostgreSQL UPSERT (INSERT ... ON CONFLICT)
-            let query;
-            const values = { ...updateValues, guildId: interaction.guild.id };
-
-            if (logChannel && modRole && confessionChannel) {
-                query = sql`
-                    INSERT INTO server_settings (guild_id, log_channel_id, mod_role_id, confession_channel_id, updated_at)
-                    VALUES (${values.guildId}, ${values.logChannelId}, ${values.modRoleId}, ${values.confessionChannelId}, NOW())
-                    ON CONFLICT (guild_id) DO UPDATE SET 
-                        log_channel_id = ${values.logChannelId},
-                        mod_role_id = ${values.modRoleId}, 
-                        confession_channel_id = ${values.confessionChannelId},
-                        updated_at = NOW()
-                `;
-            } else {
-                // Partial update - get existing settings first
-                const existing = await sql`
-                    SELECT * FROM server_settings WHERE guild_id = ${interaction.guild.id}
-                `;
-
-                const currentLogChannel = logChannel?.id || (existing[0]?.log_channel_id || null);
-                const currentModRole = modRole?.id || (existing[0]?.mod_role_id || null);
-                const currentConfessionChannel = confessionChannel?.id || (existing[0]?.confession_channel_id || null);
-
-                query = sql`
-                    INSERT INTO server_settings (guild_id, log_channel_id, mod_role_id, confession_channel_id, updated_at)
-                    VALUES (${interaction.guild.id}, ${currentLogChannel}, ${currentModRole}, ${currentConfessionChannel}, NOW())
-                    ON CONFLICT (guild_id) DO UPDATE SET 
-                        log_channel_id = ${currentLogChannel},
-                        mod_role_id = ${currentModRole},
-                        confession_channel_id = ${currentConfessionChannel},
-                        updated_at = NOW()
-                `;
-            }
-
-            await query;
-
-            // Create success embed
+        // If no options provided, show current settings
+        if (!logChannel && !modRole && !confessionChannel && !languageOption && !sourceGuildOption && !appealInviteOption && !mainInviteOption) {
+            const lang = currentLang;
             const embed = new EmbedBuilder()
-                .setTitle("✅ Server Settings Updated")
+                .setTitle(t('setup_title_view', lang))
+                .setColor(0x7289DA)
+                .setTimestamp();
+
+            if (!existing.guild_id) {
+                embed.setDescription(t('setup_no_settings', lang));
+            } else {
+                let description = t('setup_current_config', lang);
+
+                description += existing.log_channel_id
+                    ? t('setup_log_channel', lang, { id: existing.log_channel_id }) + '\n'
+                    : t('setup_log_channel_none', lang) + '\n';
+
+                description += existing.mod_role_id
+                    ? t('setup_mod_role', lang, { id: existing.mod_role_id }) + '\n'
+                    : t('setup_mod_role_none', lang) + '\n';
+
+                description += existing.confession_channel_id
+                    ? t('setup_confession_channel', lang, { id: existing.confession_channel_id }) + '\n'
+                    : t('setup_confession_channel_none', lang) + '\n';
+
+                description += t('setup_language', lang) + '\n';
+
+                description += existing.source_guild_id
+                    ? t('setup_source_guild', lang, { id: existing.source_guild_id }) + '\n'
+                    : t('setup_source_guild_none', lang) + '\n';
+
+                description += existing.appeal_invite_url
+                    ? t('setup_appeal_invite', lang, { url: existing.appeal_invite_url }) + '\n'
+                    : t('setup_appeal_invite_none', lang) + '\n';
+
+                description += existing.main_invite_url
+                    ? t('setup_main_invite', lang, { url: existing.main_invite_url }) + '\n'
+                    : t('setup_main_invite_none', lang) + '\n';
+
+                embed.setDescription(description);
+                embed.setFooter({ text: t('setup_footer_updated', lang, { date: new Date(existing.updated_at).toLocaleString() }) });
+            }
+
+            return interaction.reply({ embeds: [embed], ephemeral: true });
+        }
+
+        // Determine effective language for the reply (new value takes effect immediately)
+        const newLang = languageOption || currentLang;
+
+        try {
+            const mergedLogChannel = logChannel?.id || existing.log_channel_id || null;
+            const mergedModRole = modRole?.id || existing.mod_role_id || null;
+            const mergedConfessionChannel = confessionChannel?.id || existing.confession_channel_id || null;
+            const mergedLanguage = languageOption || currentLang;
+            const mergedSourceGuild = sourceGuildOption !== null ? sourceGuildOption : (existing.source_guild_id || null);
+            const mergedAppealInvite = appealInviteOption !== null ? appealInviteOption : (existing.appeal_invite_url || null);
+            const mergedMainInvite = mainInviteOption !== null ? mainInviteOption : (existing.main_invite_url || null);
+
+            await sql`
+                INSERT INTO server_settings (guild_id, log_channel_id, mod_role_id, confession_channel_id, language, source_guild_id, appeal_invite_url, main_invite_url, updated_at)
+                VALUES (${interaction.guild.id}, ${mergedLogChannel}, ${mergedModRole}, ${mergedConfessionChannel}, ${mergedLanguage}, ${mergedSourceGuild}, ${mergedAppealInvite}, ${mergedMainInvite}, NOW())
+                ON CONFLICT (guild_id) DO UPDATE SET
+                    log_channel_id = ${mergedLogChannel},
+                    mod_role_id = ${mergedModRole},
+                    confession_channel_id = ${mergedConfessionChannel},
+                    language = ${mergedLanguage},
+                    source_guild_id = ${mergedSourceGuild},
+                    appeal_invite_url = ${mergedAppealInvite},
+                    main_invite_url = ${mergedMainInvite},
+                    updated_at = NOW()
+            `;
+
+            clearServerSettingsCache(interaction.guild.id);
+
+            const embed = new EmbedBuilder()
+                .setTitle(t('setup_title_updated', newLang))
                 .setColor(0x51CF66)
                 .setTimestamp();
 
-            let description = "**Updated Settings:**\n\n";
-            
-            if (logChannel) {
-                description += `📋 **Log Channel:** ${logChannel}\n`;
-            }
-            
-            if (modRole) {
-                description += `👮 **Moderator Role:** ${modRole}\n`;
-            }
-            
-            if (confessionChannel) {
-                description += `💭 **Confession Channel:** ${confessionChannel}\n`;
-            }
+            let description = t('setup_updated_config', newLang);
+
+            if (logChannel) description += t('setup_updated_log_channel', newLang, { channel: logChannel.toString() }) + '\n';
+            if (modRole) description += t('setup_updated_mod_role', newLang, { role: modRole.toString() }) + '\n';
+            if (confessionChannel) description += t('setup_updated_confession_channel', newLang, { channel: confessionChannel.toString() }) + '\n';
+            if (languageOption) description += t('setup_updated_language', newLang) + '\n';
+            if (sourceGuildOption) description += t('setup_updated_source_guild', newLang, { id: sourceGuildOption }) + '\n';
+            if (appealInviteOption) description += t('setup_updated_appeal_invite', newLang, { url: appealInviteOption }) + '\n';
+            if (mainInviteOption) description += t('setup_updated_main_invite', newLang, { url: mainInviteOption }) + '\n';
 
             embed.setDescription(description);
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            return interaction.reply({ embeds: [embed], ephemeral: true });
 
         } catch (error) {
             console.error('Setup Command Error:', error);
-            return interaction.reply({ 
-                content: "❌ Failed to update server settings.", 
-                ephemeral: true 
+            return interaction.reply({
+                content: t('setup_failed_update', newLang),
+                ephemeral: true
             });
         }
     }

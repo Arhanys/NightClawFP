@@ -2,6 +2,7 @@ import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
+import { t } from '../utils/i18n.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -22,7 +23,6 @@ export default {
                   .setDescription("Reason for the mute")
                   .setRequired(true)
         )
-        
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
     async execute(interaction) {
@@ -30,28 +30,36 @@ export default {
         const time = interaction.options.getInteger("time");
         const reason = interaction.options.getString("reason") || "No reason provided";
         const guildId = interaction.guild.id;
-        
-        // Check if user has permission using server-specific settings
+
+        const settings = await getServerSettings(guildId);
+        const lang = settings.language || 'en';
+
         const hasPerms = await hasModeratorRole(interaction.member, guildId);
         if (!hasPerms) {
             return interaction.reply({
-                content: '❌ You do not have permission to mute members.',
+                content: t('mute_no_permission', lang),
                 ephemeral: true
             });
         }
-        
-        // Check if member is kickable/mutable
-        if (!member.moderatable)
-            return interaction.reply({ content: "I cannot mute this member.", ephemeral: true });
 
-        // Convert minutes to milliseconds
+        if (!member.moderatable)
+            return interaction.reply({ content: t('mute_cannot_mute', lang), ephemeral: true });
+
         const durationMs = time * 60 * 1000;
         const expiresAt = new Date(Date.now() + durationMs);
 
         try {
             await member.timeout(durationMs, reason);
-            
-            // Log to database
+
+            try {
+                const dmEmbed = new EmbedBuilder()
+                    .setTitle(t('dm_mute_title', lang))
+                    .setDescription(t('dm_mute_body', lang, { server: interaction.guild.name, reason, time }))
+                    .setColor(0x808080)
+                    .setTimestamp();
+                await member.user.send({ embeds: [dmEmbed] });
+            } catch {}
+
             await logToDatabase({
                 guild_id: guildId,
                 action: 'mute',
@@ -60,30 +68,26 @@ export default {
                 reason: reason,
             });
 
-            await interaction.reply({ content: `🔇 ${member.user.tag} has been muted for ${time} minute(s).\n📌 Reason: ${reason}`, ephemeral: true });
+            await interaction.reply({ content: t('mute_success', lang, { tag: member.user.tag, time, reason }), ephemeral: true });
 
-            // Create success embed
             const successEmbed = new EmbedBuilder()
-                .setTitle('🔇 User Muted')
+                .setTitle(t('mute_embed_title', lang))
                 .setColor(0x808080)
                 .addFields(
-                    { name: 'User', value: `${member.user.tag} (${member.user.id})`, inline: true },
-                    { name: 'Moderator', value: `${interaction.user.tag}`, inline: true },
-                    { name: 'Duration', value: `${time} minutes`, inline: true },
-                    { name: 'Expires', value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:F>`, inline: true },
-                    { name: 'Reason', value: reason, inline: false }
+                    { name: t('field_user', lang), value: `${member.user.tag} (${member.user.id})`, inline: true },
+                    { name: t('field_moderator', lang), value: `${interaction.user.tag}`, inline: true },
+                    { name: t('field_duration', lang), value: t('mute_duration', lang, { time }), inline: true },
+                    { name: t('field_expires', lang), value: `<t:${Math.floor(expiresAt.getTime() / 1000)}:F>`, inline: true },
+                    { name: t('field_reason', lang), value: reason, inline: false }
                 )
                 .setTimestamp();
-                
-            // Get server settings and send to log channel if configured
-            const settings = await getServerSettings(guildId);
+
             if (settings.log_channel_id) {
                 const logChannel = interaction.guild.channels.cache.get(settings.log_channel_id);
                 if (logChannel) {
                     await logChannel.send({ embeds: [successEmbed] });
                 }
             } else {
-                // Fallback to old log system
                 await sendLog(interaction.guild, {
                     action: "Mute",
                     target: member.user,
@@ -93,7 +97,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: "Failed to mute the member.", ephemeral: true });
+            return interaction.reply({ content: t('mute_failed', lang), ephemeral: true });
         }
     }
 };

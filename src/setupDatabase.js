@@ -4,43 +4,6 @@ async function setupDatabase() {
   try {
     console.log('Setting up database tables...');
 
-    // Create KMK posts table
-    await sql`
-      CREATE TABLE IF NOT EXISTS kmk_posts (
-        id SERIAL PRIMARY KEY,
-        text TEXT NOT NULL,
-        image_url TEXT NOT NULL,
-        image_url_2 TEXT NOT NULL,
-        image_url_3 TEXT NOT NULL,
-        scheduled_time TIMESTAMP,
-        author_id TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      )
-    `;
-
-    // Add new columns to existing kmk_posts table if they don't exist
-    try {
-      await sql`ALTER TABLE kmk_posts ADD COLUMN IF NOT EXISTS image_url_2 TEXT`;
-      await sql`ALTER TABLE kmk_posts ADD COLUMN IF NOT EXISTS image_url_3 TEXT`;
-      await sql`ALTER TABLE kmk_posts ADD COLUMN IF NOT EXISTS guild_id TEXT`;
-      console.log('✅ KMK table columns updated');
-    } catch (error) {
-      console.log('⚠️  KMK table already up to date or error:', error.message);
-    }
-
-    // Update existing records with NULL values to have placeholder URLs
-    try {
-      await sql`
-        UPDATE kmk_posts 
-        SET image_url_2 = COALESCE(image_url_2, image_url),
-            image_url_3 = COALESCE(image_url_3, image_url)
-        WHERE image_url_2 IS NULL OR image_url_3 IS NULL
-      `;
-      console.log('✅ Existing KMK records migrated');
-    } catch (error) {
-      console.log('⚠️  Migration not needed or error:', error.message);
-    }
-
     // Create confessions table
     await sql`
       CREATE TABLE IF NOT EXISTS confessions (
@@ -85,10 +48,19 @@ async function setupDatabase() {
         log_channel_id TEXT,
         mod_role_id TEXT,
         confession_channel_id TEXT,
+        language TEXT DEFAULT 'en',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `;
+
+    // Add language column to existing server_settings rows
+    try {
+      await sql`ALTER TABLE server_settings ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en'`;
+      console.log('✅ Language column added to server_settings');
+    } catch (error) {
+      console.log('⚠️  Language column already exists or error:', error.message);
+    }
 
     // Add guild_id to existing tables if they don't have it
     try {
@@ -97,6 +69,36 @@ async function setupDatabase() {
       console.log('✅ Guild ID columns added to existing tables');
     } catch (error) {
       console.log('⚠️  Guild columns already exist or error:', error.message);
+    }
+
+    // Create ban appeals table
+    await sql`
+      CREATE TABLE IF NOT EXISTS ban_appeals (
+        id SERIAL PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        appeal_guild_id TEXT NOT NULL,
+        source_guild_id TEXT NOT NULL,
+        appeal_reason TEXT NOT NULL,
+        ban_reason TEXT,
+        status TEXT DEFAULT 'open',
+        reviewed_by TEXT,
+        decision_reason TEXT,
+        channel_id TEXT,
+        message_id TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    // Add appeal-related columns to server_settings
+    try {
+      await sql`ALTER TABLE server_settings ADD COLUMN IF NOT EXISTS source_guild_id TEXT`;
+      await sql`ALTER TABLE server_settings ADD COLUMN IF NOT EXISTS appeal_invite_url TEXT`;
+      await sql`ALTER TABLE server_settings ADD COLUMN IF NOT EXISTS main_invite_url TEXT`;
+      await sql`ALTER TABLE ban_appeals ADD COLUMN IF NOT EXISTS cooldown_until TIMESTAMP`;
+      console.log('✅ Appeal columns added to server_settings');
+    } catch (error) {
+      console.log('⚠️  Appeal columns already exist or error:', error.message);
     }
 
     console.log('✅ Database tables created successfully!');

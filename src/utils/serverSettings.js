@@ -21,7 +21,11 @@ export async function getServerSettings(guildId) {
             guild_id: guildId,
             log_channel_id: null,
             mod_role_id: null,
-            confession_channel_id: null
+            confession_channel_id: null,
+            language: 'en',
+            source_guild_id: null,
+            appeal_invite_url: null,
+            main_invite_url: null
         };
 
         // Cache the result
@@ -37,7 +41,11 @@ export async function getServerSettings(guildId) {
             guild_id: guildId,
             log_channel_id: null,
             mod_role_id: null,
-            confession_channel_id: null
+            confession_channel_id: null,
+            language: 'en',
+            source_guild_id: null,
+            appeal_invite_url: null,
+            main_invite_url: null
         };
     }
 }

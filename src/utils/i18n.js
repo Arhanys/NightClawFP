@@ -1,0 +1,476 @@
+const translations = {
+    en: {
+        // Common
+        no_reason: 'No reason provided',
+        member_not_found: 'Member not found.',
+        unknown_moderator: 'Unknown Moderator',
+        unknown_user: 'Unknown User',
+
+        // Field labels
+        field_user: 'User',
+        field_moderator: 'Moderator',
+        field_reason: 'Reason',
+        field_target: 'Target',
+        field_action: 'Action',
+        field_date: 'Date',
+        field_duration: 'Duration',
+        field_expires: 'Expires',
+        field_total_warnings: 'Total Warnings',
+
+        // Ban
+        ban_no_permission: '❌ You do not have permission to ban members.',
+        ban_cannot_ban: 'I cannot ban this member.',
+        ban_success: '⛔ {tag} has been banned.\n📌 Reason: {reason}',
+        ban_embed_title: '🔨 User Banned',
+        ban_failed: 'Failed to ban the member.',
+
+        // Kick
+        kick_no_permission: '❌ You do not have permission to kick members.',
+        kick_cannot_kick: 'I cannot kick this member.',
+        kick_success: '👢 {tag} has been kicked.\n📌 Reason: {reason}',
+        kick_embed_title: '👢 User Kicked',
+        kick_failed: 'Failed to kick the member.',
+
+        // Mute
+        mute_no_permission: '❌ You do not have permission to mute members.',
+        mute_cannot_mute: 'I cannot mute this member.',
+        mute_success: '🔇 {tag} has been muted for {time} minute(s).\n📌 Reason: {reason}',
+        mute_embed_title: '🔇 User Muted',
+        mute_duration: '{time} minutes',
+        mute_failed: 'Failed to mute the member.',
+
+        // Unmute
+        unmute_no_permission: '❌ You do not have permission to unmute members.',
+        unmute_not_muted: 'This member is not muted.',
+        unmute_success: '🔊 {tag} has been unmuted.',
+        unmute_embed_title: '🔊 User Unmuted',
+        unmute_failed: 'Failed to unmute the member.',
+
+        // Warn
+        warn_no_permission: '❌ You do not have permission to warn members.',
+        warn_success: '⚠️ {tag} has been warned.\n📌 Reason: {reason}\n🔢 Total warnings: {count}',
+        warn_threshold: '\n⚠️ **Warning:** This user now has 3+ warnings. Consider issuing a ban.',
+        warn_embed_title: '⚠️ User Warned',
+        warn_failed: 'Failed to warn the member.',
+
+        // Clear
+        clear_no_permission: "I don't have **Manage Messages** permission!",
+        clear_success: 'Successfully deleted **{count}** message(s){target}.\nReason: {reason}',
+        clear_success_target: ' from {tag}',
+        clear_no_messages: 'No messages were deleted (they may be older than 14 days or already gone).',
+        clear_failed: 'An error occurred while deleting messages. Some may be too old (>14 days) or already deleted.',
+
+        // Sanction command
+        sanction_embed_title: '📋 Moderation Record',
+        sanction_clean: '✅ No moderation history found. This user has a clean record!',
+        sanction_total: '**Total Sanctions:** {total}{pageInfo}',
+        sanction_page_info: ' (Page {page}/{total})',
+        sanction_field_actions: 'Actions',
+        sanction_btn_prev: '⬅️ Previous',
+        sanction_btn_details: '📋 View Details',
+        sanction_btn_next: 'Next ➡️',
+        sanction_failed: '❌ Failed to retrieve moderation record.',
+
+        // Sanction handler
+        sanction_modal_title: 'View Sanction Details',
+        sanction_input_label: 'Sanction Number',
+        sanction_input_placeholder: 'Enter number (e.g., 1, 2, 3...)',
+        sanction_user_not_found: '❌ User not found.',
+        sanction_invalid_number: '❌ Please enter a valid sanction number (1, 2, 3...).',
+        sanction_not_found_count: '❌ Sanction number {n} not found. User has {total} total sanctions.',
+        sanction_not_found: '❌ Sanction number {n} not found.',
+        sanction_detail_title: '{emoji} Sanction #{n} Details',
+        sanction_detail_failed: '❌ Failed to load sanction details.',
+
+        // Ticket setup command
+        ticket_panel_title: '🎫 Support Tickets',
+        ticket_panel_description: 'Click the button below to create a private ticket. Our staff will assist you shortly!',
+        ticket_panel_footer: 'Support Panel',
+        ticket_panel_btn: 'Open Ticket',
+        ticket_panel_created: '✅ Ticket panel has been created!',
+
+        // Ticket handler
+        ticket_already_open: '❌ You already have an open ticket!',
+        ticket_modal_title: 'Open a Ticket',
+        ticket_reason_label: 'Reason for opening this ticket',
+        ticket_reason_placeholder: 'Describe your issue or question...',
+        ticket_category_not_found: '⚠ Ticket category not found!',
+        ticket_embed_title: '🎫 Ticket for {username}',
+        ticket_embed_desc: 'Your ticket has been created. A moderator will assist you shortly.',
+        ticket_field_user: '👤 User',
+        ticket_field_reason: '📌 Reason',
+        ticket_btn_close: 'Close Ticket',
+        ticket_created: '✅ Your ticket has been created: {channel}',
+        ticket_no_close_perm: '❌ You do not have permission to close this ticket.',
+        ticket_closing: '🗑️ Closing ticket...',
+
+        // Confession setup command
+        confession_panel_btn_anon: '🎭 Anonymous Confession',
+        confession_panel_btn_public: '💬 Public Confession',
+        confession_panel_title: '💭 Confession Box',
+        confession_panel_description: `Share your thoughts anonymously or publicly!
+
+      🎭 **Anonymous Confession** - Your identity will remain hidden
+      💬 **Public Confession** - Your name will be displayed
+
+      All confessions are reviewed by moderators before publication.`,
+        confession_panel_footer: 'Confession Panel • Be respectful!',
+        confession_panel_created: '✅ Confession panel has been created!',
+
+        // Confession handler
+        confession_modal_title_anon: '🎭 Anonymous Confession',
+        confession_modal_title_public: '💬 Public Confession',
+        confession_embed_title_anon: '🎭 Anonymous Confession',
+        confession_embed_title_public: '💬 Public Confession',
+        confession_input_label: 'Your confession',
+        confession_input_placeholder: 'Share what is on your heart...',
+        confession_footer_anon: 'Anonymous • ID: {id}',
+        confession_footer_public: 'Public confession by {tag}',
+        confession_published_anon: '✅ Your anonymous confession has been published!',
+        confession_published_public: '✅ Your public confession has been published!',
+        confession_thread_anon: '💭 Discussion',
+        confession_thread_public: '💭 Discussion with {name}',
+
+        // Generate log
+        log_title: '🔧 Moderation | {action}',
+        log_action_ban: 'Ban',
+        log_action_kick: 'Kick',
+        log_action_warn: 'Warn',
+        log_action_mute: 'Mute',
+        log_action_unmute: 'Unmute',
+        log_action_clear: 'Clear Messages',
+        log_field_target: '👤 Target',
+        log_field_moderator: '🛠 Moderator',
+        log_field_reason: '📄 Reason',
+        log_field_extra: '➕ Extra',
+        log_unknown_user: 'Unknown user',
+        log_unknown_moderator: 'Unknown moderator',
+
+        // Setup command
+        setup_title_view: '🔧 Server Settings',
+        setup_no_settings: '❌ No server settings configured yet. Use `/setup` with options to configure.',
+        setup_current_config: '**Current Configuration:**\n\n',
+        setup_log_channel: '📋 **Log Channel:** <#{id}>',
+        setup_log_channel_none: '📋 **Log Channel:** Not set',
+        setup_mod_role: '👮 **Moderator Role:** <@&{id}>',
+        setup_mod_role_none: '👮 **Moderator Role:** Not set',
+        setup_confession_channel: '💭 **Confession Channel:** <#{id}>',
+        setup_confession_channel_none: '💭 **Confession Channel:** Not set',
+        setup_language: '🌐 **Language:** English',
+        setup_footer_updated: 'Last updated: {date}',
+        setup_failed_retrieve: '❌ Failed to retrieve server settings.',
+        setup_title_updated: '✅ Server Settings Updated',
+        setup_updated_config: '**Updated Settings:**\n\n',
+        setup_updated_log_channel: '📋 **Log Channel:** {channel}',
+        setup_updated_mod_role: '👮 **Moderator Role:** {role}',
+        setup_updated_confession_channel: '💭 **Confession Channel:** {channel}',
+        setup_updated_language: '🌐 **Language:** English',
+        // Slowmode
+        slowmode_no_permission: '❌ You do not have permission to set slowmode.',
+        slowmode_set: '🐢 Slowmode set to **{seconds}s** in {channel}.',
+        slowmode_disabled: '✅ Slowmode disabled in {channel}.',
+        slowmode_failed: '❌ Failed to set slowmode.',
+
+        setup_failed_update: '❌ Failed to update server settings.',
+        setup_source_guild: '🔗 **Source Guild ID:** `{id}`',
+        setup_source_guild_none: '🔗 **Source Guild ID:** Not set',
+        setup_appeal_invite: '🔓 **Appeal Server Invite:** {url}',
+        setup_appeal_invite_none: '🔓 **Appeal Server Invite:** Not set',
+        setup_updated_source_guild: '🔗 **Source Guild ID:** `{id}`',
+        setup_updated_appeal_invite: '🔓 **Appeal Server Invite:** {url}',
+        setup_main_invite: '🏠 **Main Server Invite:** {url}',
+        setup_main_invite_none: '🏠 **Main Server Invite:** Not set',
+        setup_updated_main_invite: '🏠 **Main Server Invite:** {url}',
+
+        // Ban appeal panel/ticket
+        appeal_panel_title: '🔨 Ban Appeal',
+        appeal_panel_description: 'Were you banned from our main server? Click the button below to open a ban appeal ticket.',
+        appeal_panel_footer: 'Ban Appeal Panel',
+        appeal_panel_btn: 'Appeal My Ban',
+        appeal_panel_created: '✅ Ban appeal panel has been created!',
+        appeal_already_open: '❌ You already have an open appeal ticket!',
+        appeal_no_source_guild: '❌ This appeal server is not configured. An administrator needs to set the source guild ID via `/setup`.',
+        appeal_no_ban_found: '❌ No ban record found for your account on the main server.',
+        appeal_modal_title: 'Ban Appeal',
+        appeal_reason_label: 'Why should your ban be lifted?',
+        appeal_reason_placeholder: 'Explain your situation and why you believe your ban should be reversed...',
+        appeal_embed_title: '🔨 Ban Appeal — {tag}',
+        appeal_field_ban_reason: '📌 Ban Reason',
+        appeal_field_appeal_reason: '📝 Appeal Reason',
+        appeal_field_status: '📊 Status',
+        appeal_status_open: '🟡 Open',
+        appeal_status_accepted: '🟢 Accepted',
+        appeal_status_refused: '🔴 Refused',
+        appeal_btn_accept: '✅ Accept',
+        appeal_btn_refuse: '❌ Refuse',
+        appeal_btn_close: '🗑️ Close Appeal',
+        appeal_created: '✅ Your appeal ticket has been created: {channel}',
+        appeal_accept_modal_title: 'Accept Appeal',
+        appeal_accept_reason_label: 'Reason for accepting',
+        appeal_accepted_msg: '✅ Appeal accepted. Here is your invite to the main server: {invite}',
+        appeal_refused_msg: '❌ Your appeal has been refused.',
+        appeal_no_permission: '❌ You do not have permission to manage appeals.',
+        appeal_cooldown_select: '⏳ Select how long before this user can re-appeal:',
+        appeal_cooldown_3d: '3 Days',
+        appeal_cooldown_1w: '1 Week',
+        appeal_cooldown_2w: '2 Weeks',
+        appeal_cooldown_1m: '1 Month',
+        appeal_cooldown_none: 'No cooldown',
+        appeal_on_cooldown: '❌ You cannot submit a new appeal yet. Please wait until {date}.',
+        appeal_not_found: '❌ No open appeal found for this channel.',
+        appeal_unban_failed: '⚠️ Appeal accepted but failed to unban the user automatically: {error}',
+        appeal_log_accepted_title: '🟢 Ban Appeal Accepted',
+        appeal_log_refused_title: '🔴 Ban Appeal Refused',
+
+        // Sanction DMs
+        dm_ban_title: '⛔ You have been banned',
+        dm_ban_body: 'You have been banned from **{server}**.\n📌 **Reason:** {reason}',
+        dm_kick_title: '👢 You have been kicked',
+        dm_kick_body: 'You have been kicked from **{server}**.\n📌 **Reason:** {reason}',
+        dm_warn_title: '⚠️ You have received a warning',
+        dm_warn_body: 'You have been warned in **{server}**.\n📌 **Reason:** {reason}\n🔢 **Total warnings:** {count}',
+        dm_mute_title: '🔇 You have been muted',
+        dm_mute_body: 'You have been muted in **{server}** for **{time}** minute(s).\n📌 **Reason:** {reason}',
+        dm_appeal_link: 'You can appeal your ban here: {invite}',
+    },
+
+    fr: {
+        // Common
+        no_reason: 'Aucune raison fournie',
+        member_not_found: 'Membre introuvable.',
+        unknown_moderator: 'Modérateur inconnu',
+        unknown_user: 'Utilisateur inconnu',
+
+        // Field labels
+        field_user: 'Utilisateur',
+        field_moderator: 'Modérateur',
+        field_reason: 'Raison',
+        field_target: 'Cible',
+        field_action: 'Action',
+        field_date: 'Date',
+        field_duration: 'Durée',
+        field_expires: 'Expire le',
+        field_total_warnings: 'Avertissements totaux',
+
+        // Ban
+        ban_no_permission: "❌ Vous n'avez pas la permission de bannir des membres.",
+        ban_cannot_ban: 'Je ne peux pas bannir ce membre.',
+        ban_success: '⛔ {tag} a été banni.\n📌 Raison : {reason}',
+        ban_embed_title: '🔨 Utilisateur banni',
+        ban_failed: 'Impossible de bannir le membre.',
+
+        // Kick
+        kick_no_permission: "❌ Vous n'avez pas la permission d'expulser des membres.",
+        kick_cannot_kick: 'Je ne peux pas expulser ce membre.',
+        kick_success: '👢 {tag} a été expulsé.\n📌 Raison : {reason}',
+        kick_embed_title: '👢 Utilisateur expulsé',
+        kick_failed: "Impossible d'expulser le membre.",
+
+        // Mute
+        mute_no_permission: "❌ Vous n'avez pas la permission de rendre muet des membres.",
+        mute_cannot_mute: 'Je ne peux pas rendre muet ce membre.',
+        mute_success: '🔇 {tag} a été rendu muet pendant {time} minute(s).\n📌 Raison : {reason}',
+        mute_embed_title: '🔇 Utilisateur rendu muet',
+        mute_duration: '{time} minutes',
+        mute_failed: 'Impossible de rendre muet le membre.',
+
+        // Unmute
+        unmute_no_permission: "❌ Vous n'avez pas la permission de retirer le silence des membres.",
+        unmute_not_muted: "Ce membre n'est pas en sourdine.",
+        unmute_success: '🔊 {tag} a été remis en communication.',
+        unmute_embed_title: '🔊 Utilisateur remis en communication',
+        unmute_failed: 'Impossible de retirer le silence du membre.',
+
+        // Warn
+        warn_no_permission: "❌ Vous n'avez pas la permission d'avertir des membres.",
+        warn_success: '⚠️ {tag} a reçu un avertissement.\n📌 Raison : {reason}\n🔢 Total des avertissements : {count}',
+        warn_threshold: "\n⚠️ **Attention :** Cet utilisateur a maintenant 3+ avertissements. Envisagez un bannissement.",
+        warn_embed_title: '⚠️ Utilisateur averti',
+        warn_failed: "Impossible d'avertir le membre.",
+
+        // Clear
+        clear_no_permission: 'Je ne dispose pas de la permission **Gérer les messages** !',
+        clear_success: '**{count}** message(s) supprimé(s) avec succès{target}.\nRaison : {reason}',
+        clear_success_target: ' de {tag}',
+        clear_no_messages: 'Aucun message supprimé (ils ont peut-être plus de 14 jours ou ont déjà été supprimés).',
+        clear_failed: "Une erreur s'est produite lors de la suppression des messages. Certains sont peut-être trop anciens (>14 jours) ou déjà supprimés.",
+
+        // Sanction command
+        sanction_embed_title: '📋 Dossier de modération',
+        sanction_clean: '✅ Aucun historique de modération trouvé. Cet utilisateur a un casier vierge !',
+        sanction_total: '**Total des sanctions :** {total}{pageInfo}',
+        sanction_page_info: ' (Page {page}/{total})',
+        sanction_field_actions: 'Actions',
+        sanction_btn_prev: '⬅️ Précédent',
+        sanction_btn_details: '📋 Voir détails',
+        sanction_btn_next: 'Suivant ➡️',
+        sanction_failed: '❌ Impossible de récupérer le dossier de modération.',
+
+        // Sanction handler
+        sanction_modal_title: 'Voir les détails de la sanction',
+        sanction_input_label: 'Numéro de sanction',
+        sanction_input_placeholder: 'Entrez un numéro (ex : 1, 2, 3...)',
+        sanction_user_not_found: '❌ Utilisateur introuvable.',
+        sanction_invalid_number: '❌ Veuillez entrer un numéro de sanction valide (1, 2, 3...).',
+        sanction_not_found_count: "❌ Sanction numéro {n} introuvable. L'utilisateur a {total} sanctions au total.",
+        sanction_not_found: '❌ Sanction numéro {n} introuvable.',
+        sanction_detail_title: '{emoji} Sanction n°{n} — Détails',
+        sanction_detail_failed: '❌ Impossible de charger les détails de la sanction.',
+
+        // Ticket setup command
+        ticket_panel_title: '🎫 Tickets de support',
+        ticket_panel_description: 'Cliquez sur le bouton ci-dessous pour créer un ticket privé. Notre équipe vous assistera rapidement !',
+        ticket_panel_footer: 'Panneau de support',
+        ticket_panel_btn: 'Ouvrir un ticket',
+        ticket_panel_created: '✅ Le panneau de tickets a été créé !',
+
+        // Ticket handler
+        ticket_already_open: '❌ Vous avez déjà un ticket ouvert !',
+        ticket_modal_title: 'Ouvrir un ticket',
+        ticket_reason_label: "Raison de l'ouverture du ticket",
+        ticket_reason_placeholder: 'Décrivez votre problème ou votre question...',
+        ticket_category_not_found: '⚠ Catégorie de ticket introuvable !',
+        ticket_embed_title: '🎫 Ticket de {username}',
+        ticket_embed_desc: 'Votre ticket a été créé. Un modérateur vous assistera bientôt.',
+        ticket_field_user: '👤 Utilisateur',
+        ticket_field_reason: '📌 Raison',
+        ticket_btn_close: 'Fermer le ticket',
+        ticket_created: '✅ Votre ticket a été créé : {channel}',
+        ticket_no_close_perm: "❌ Vous n'avez pas la permission de fermer ce ticket.",
+        ticket_closing: '🗑️ Fermeture du ticket...',
+
+        // Confession setup command
+        confession_panel_btn_anon: '🎭 Confession anonyme',
+        confession_panel_btn_public: '💬 Confession publique',
+        confession_panel_title: '💭 Boîte à Confessions',
+        confession_panel_description: `Partage tes pensées en toute confidentialité ou publiquement !
+
+      🎭 **Confession anonyme** - Ton identité restera cachée
+      💬 **Confession publique** - Ton nom sera affiché
+
+      Toutes les confessions sont examinées par les modérateurs avant publication.`,
+        confession_panel_footer: 'Panneau de Confession • Soyez respectueux !',
+        confession_panel_created: '✅ Le panneau de confession a été créé !',
+
+        // Confession handler
+        confession_modal_title_anon: '🎭 Confession anonyme',
+        confession_modal_title_public: '💬 Confession publique',
+        confession_embed_title_anon: '🎭 Confession anonyme',
+        confession_embed_title_public: '💬 Confession publique',
+        confession_input_label: 'Ta confession',
+        confession_input_placeholder: 'Partage ce que tu as sur le cœur...',
+        confession_footer_anon: 'Anonyme • ID : {id}',
+        confession_footer_public: 'Confession publique de {tag}',
+        confession_published_anon: '✅ Ta confession anonyme a été publiée !',
+        confession_published_public: '✅ Ta confession publique a été publiée !',
+        confession_thread_anon: '💭 Discussion',
+        confession_thread_public: '💭 Discussion avec {name}',
+
+        // Generate log
+        log_title: '🔧 Modération | {action}',
+        log_action_ban: 'Bannissement',
+        log_action_kick: 'Expulsion',
+        log_action_warn: 'Avertissement',
+        log_action_mute: 'Sourdine',
+        log_action_unmute: 'Retrait de sourdine',
+        log_action_clear: 'Suppression de messages',
+        log_field_target: '👤 Cible',
+        log_field_moderator: '🛠 Modérateur',
+        log_field_reason: '📄 Raison',
+        log_field_extra: '➕ Extra',
+        log_unknown_user: 'Utilisateur inconnu',
+        log_unknown_moderator: 'Modérateur inconnu',
+
+        // Setup command
+        setup_title_view: '🔧 Paramètres du serveur',
+        setup_no_settings: '❌ Aucun paramètre configuré. Utilisez `/setup` avec des options pour configurer.',
+        setup_current_config: '**Configuration actuelle :**\n\n',
+        setup_log_channel: '📋 **Canal de logs :** <#{id}>',
+        setup_log_channel_none: '📋 **Canal de logs :** Non défini',
+        setup_mod_role: '👮 **Rôle modérateur :** <@&{id}>',
+        setup_mod_role_none: '👮 **Rôle modérateur :** Non défini',
+        setup_confession_channel: '💭 **Canal de confessions :** <#{id}>',
+        setup_confession_channel_none: '💭 **Canal de confessions :** Non défini',
+        setup_language: '🌐 **Langue :** Français',
+        setup_footer_updated: 'Dernière mise à jour : {date}',
+        setup_failed_retrieve: '❌ Impossible de récupérer les paramètres du serveur.',
+        setup_title_updated: '✅ Paramètres du serveur mis à jour',
+        setup_updated_config: '**Paramètres mis à jour :**\n\n',
+        setup_updated_log_channel: '📋 **Canal de logs :** {channel}',
+        setup_updated_mod_role: '👮 **Rôle modérateur :** {role}',
+        setup_updated_confession_channel: '💭 **Canal de confessions :** {channel}',
+        setup_updated_language: '🌐 **Langue :** Français',
+        // Slowmode
+        slowmode_no_permission: "❌ Vous n'avez pas la permission de définir le slowmode.",
+        slowmode_set: '🐢 Slowmode défini à **{seconds}s** dans {channel}.',
+        slowmode_disabled: '✅ Slowmode désactivé dans {channel}.',
+        slowmode_failed: '❌ Impossible de définir le slowmode.',
+
+        setup_failed_update: '❌ Impossible de mettre à jour les paramètres du serveur.',
+        setup_source_guild: '🔗 **ID du serveur source :** `{id}`',
+        setup_source_guild_none: '🔗 **ID du serveur source :** Non défini',
+        setup_appeal_invite: '🔓 **Invitation du serveur d\'appel :** {url}',
+        setup_appeal_invite_none: '🔓 **Invitation du serveur d\'appel :** Non définie',
+        setup_updated_source_guild: '🔗 **ID du serveur source :** `{id}`',
+        setup_updated_appeal_invite: '🔓 **Invitation du serveur d\'appel :** {url}',
+        setup_main_invite: '🏠 **Invitation du serveur principal :** {url}',
+        setup_main_invite_none: '🏠 **Invitation du serveur principal :** Non définie',
+        setup_updated_main_invite: '🏠 **Invitation du serveur principal :** {url}',
+
+        // Ban appeal panel/ticket
+        appeal_panel_title: '🔨 Appel de bannissement',
+        appeal_panel_description: 'Avez-vous été banni de notre serveur principal ? Cliquez sur le bouton ci-dessous pour ouvrir un ticket d\'appel.',
+        appeal_panel_footer: 'Panneau d\'appel de bannissement',
+        appeal_panel_btn: 'Contester mon bannissement',
+        appeal_panel_created: '✅ Le panneau d\'appel de bannissement a été créé !',
+        appeal_already_open: '❌ Vous avez déjà un ticket d\'appel ouvert !',
+        appeal_no_source_guild: '❌ Ce serveur d\'appel n\'est pas configuré. Un administrateur doit définir l\'ID du serveur source via `/setup`.',
+        appeal_no_ban_found: '❌ Aucun bannissement trouvé pour votre compte sur le serveur principal.',
+        appeal_modal_title: 'Appel de bannissement',
+        appeal_reason_label: 'Pourquoi ce bannissement devrait être levé ?',
+        appeal_reason_placeholder: 'Expliquez votre situation et pourquoi vous pensez que votre bannissement devrait être annulé...',
+        appeal_embed_title: '🔨 Appel de bannissement — {tag}',
+        appeal_field_ban_reason: '📌 Raison du bannissement',
+        appeal_field_appeal_reason: '📝 Raison de l\'appel',
+        appeal_field_status: '📊 Statut',
+        appeal_status_open: '🟡 Ouvert',
+        appeal_status_accepted: '🟢 Accepté',
+        appeal_status_refused: '🔴 Refusé',
+        appeal_btn_accept: '✅ Accepter',
+        appeal_btn_refuse: '❌ Refuser',
+        appeal_btn_close: '🗑️ Fermer l\'appel',
+        appeal_created: '✅ Votre ticket d\'appel a été créé : {channel}',
+        appeal_accept_modal_title: 'Accepter l\'appel',
+        appeal_accept_reason_label: 'Raison de l\'acceptation',
+        appeal_accepted_msg: '✅ Appel accepté. Voici votre invitation pour le serveur principal : {invite}',
+        appeal_refused_msg: '❌ Votre appel a été refusé.',
+        appeal_no_permission: '❌ Vous n\'avez pas la permission de gérer les appels.',
+        appeal_cooldown_select: '⏳ Sélectionnez la durée avant que cet utilisateur puisse re-soumettre un appel :',
+        appeal_cooldown_3d: '3 Jours',
+        appeal_cooldown_1w: '1 Semaine',
+        appeal_cooldown_2w: '2 Semaines',
+        appeal_cooldown_1m: '1 Mois',
+        appeal_cooldown_none: 'Pas de délai',
+        appeal_on_cooldown: '❌ Vous ne pouvez pas encore soumettre un nouvel appel. Veuillez attendre jusqu\'au {date}.',
+        appeal_not_found: '❌ Aucun appel ouvert trouvé pour ce canal.',
+        appeal_unban_failed: '⚠️ Appel accepté mais le débannissement automatique a échoué : {error}',
+        appeal_log_accepted_title: '🟢 Appel de bannissement accepté',
+        appeal_log_refused_title: '🔴 Appel de bannissement refusé',
+
+        // Sanction DMs
+        dm_ban_title: '⛔ Vous avez été banni',
+        dm_ban_body: 'Vous avez été banni de **{server}**.\n📌 **Raison :** {reason}',
+        dm_kick_title: '👢 Vous avez été expulsé',
+        dm_kick_body: 'Vous avez été expulsé de **{server}**.\n📌 **Raison :** {reason}',
+        dm_warn_title: '⚠️ Vous avez reçu un avertissement',
+        dm_warn_body: 'Vous avez été averti dans **{server}**.\n📌 **Raison :** {reason}\n🔢 **Total des avertissements :** {count}',
+        dm_mute_title: '🔇 Vous avez été rendu muet',
+        dm_mute_body: 'Vous avez été rendu muet dans **{server}** pendant **{time}** minute(s).\n📌 **Raison :** {reason}',
+        dm_appeal_link: 'Vous pouvez contester votre bannissement ici : {invite}',
+    }
+};
+
+export function t(key, lang = 'en', vars = {}) {
+    const str = translations[lang]?.[key] ?? translations['en'][key] ?? key;
+    return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : `{${k}}`);
+}

@@ -2,6 +2,7 @@ import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
+import { t } from '../utils/i18n.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -24,22 +25,35 @@ export default {
         const reason = interaction.options.getString("reason") || "No reason provided";
         const guildId = interaction.guild.id;
 
-        // Check if user has permission using server-specific settings
+        const settings = await getServerSettings(guildId);
+        const lang = settings.language || 'en';
+
         const hasPerms = await hasModeratorRole(interaction.member, guildId);
         if (!hasPerms) {
             return interaction.reply({
-                content: '❌ You do not have permission to ban members.',
+                content: t('ban_no_permission', lang),
                 ephemeral: true
             });
         }
 
         if (!member.bannable)
-            return interaction.reply({ content: "I cannot ban this member.", ephemeral: true });
+            return interaction.reply({ content: t('ban_cannot_ban', lang), ephemeral: true });
 
         try {
+            try {
+                const dmEmbed = new EmbedBuilder()
+                    .setTitle(t('dm_ban_title', lang))
+                    .setDescription(t('dm_ban_body', lang, { server: interaction.guild.name, reason }))
+                    .setColor(0xFF0000)
+                    .setTimestamp();
+                if (settings.appeal_invite_url) {
+                    dmEmbed.addFields({ name: '🔓 Appeal', value: t('dm_appeal_link', lang, { invite: settings.appeal_invite_url }) });
+                }
+                await member.user.send({ embeds: [dmEmbed] });
+            } catch {}
+
             await member.ban({ reason });
-            
-            // Log to database
+
             await logToDatabase({
                 guild_id: guildId,
                 action: 'ban',
@@ -48,28 +62,24 @@ export default {
                 reason: reason,
             });
 
-            await interaction.reply({ content: `⛔ ${member.user.tag} has been banned.\n📌 Reason: ${reason}`, ephemeral: true });
+            await interaction.reply({ content: t('ban_success', lang, { tag: member.user.tag, reason }), ephemeral: true });
 
-            // Create success embed
             const successEmbed = new EmbedBuilder()
-                .setTitle('🔨 User Banned')
+                .setTitle(t('ban_embed_title', lang))
                 .setColor(0xFF0000)
                 .addFields(
-                    { name: 'User', value: `${member.user.tag} (${member.user.id})`, inline: true },
-                    { name: 'Moderator', value: `${interaction.user.tag}`, inline: true },
-                    { name: 'Reason', value: reason, inline: false }
+                    { name: t('field_user', lang), value: `${member.user.tag} (${member.user.id})`, inline: true },
+                    { name: t('field_moderator', lang), value: `${interaction.user.tag}`, inline: true },
+                    { name: t('field_reason', lang), value: reason, inline: false }
                 )
                 .setTimestamp();
-                
-            // Get server settings and send to log channel if configured
-            const settings = await getServerSettings(guildId);
+
             if (settings.log_channel_id) {
                 const logChannel = interaction.guild.channels.cache.get(settings.log_channel_id);
                 if (logChannel) {
                     await logChannel.send({ embeds: [successEmbed] });
                 }
             } else {
-                // Fallback to old log system
                 await sendLog(interaction.guild, {
                     action: "Ban",
                     target: member.user,
@@ -79,7 +89,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: "Failed to ban the member.", ephemeral: true });
+            return interaction.reply({ content: t('ban_failed', lang), ephemeral: true });
         }
     }
 };

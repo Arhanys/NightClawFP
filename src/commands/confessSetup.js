@@ -1,45 +1,36 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import { getServerSettings } from '../utils/serverSettings.js';
+import { t } from '../utils/i18n.js';
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName("confessionsetup")
-    .setDescription("Set up the confession panel in this channel")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), // only admins can use
+    data: new SlashCommandBuilder()
+        .setName("confessionsetup")
+        .setDescription("Set up the confession panel in this channel")
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-  async execute(interaction) {
-    // Create the confession buttons
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('confession_anonymous')
-        .setLabel('🎭 Confession anonyme')
-        .setStyle(ButtonStyle.Secondary)
-        .setEmoji('🎭'),
-      new ButtonBuilder()
-        .setCustomId('confession_public')
-        .setLabel('💬 Confession publique')
-        .setStyle(ButtonStyle.Primary)
-        .setEmoji('💬')
-    );
+    async execute(interaction) {
+        const settings = await getServerSettings(interaction.guild.id);
+        const lang = settings.language || 'en';
 
-    // Create the embed
-    const embed = new EmbedBuilder()
-      .setTitle("💭 Boîte à Confessions")
-      .setDescription(`Partage tes pensées en toute confidentialité ou publiquement !
-      
-      🎭 **Confession anonyme** - Ton identité restera cachée
-      💬 **Confession publique** - Ton nom sera affiché
-      
-      Toutes les confessions sont examinées par les modérateurs avant publication.`)
-      .setColor(0x7289DA) // Discord blurple
-      .setFooter({ text: "Panneau de Confession • Soyez respectueux !" })
-      .setTimestamp();
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('confession_anonymous')
+                .setLabel(t('confession_panel_btn_anon', lang))
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('confession_public')
+                .setLabel(t('confession_panel_btn_public', lang))
+                .setStyle(ButtonStyle.Primary)
+        );
 
-    // Send the permanent message
-    await interaction.channel.send({
-      embeds: [embed],
-      components: [row]
-    });
+        const embed = new EmbedBuilder()
+            .setTitle(t('confession_panel_title', lang))
+            .setDescription(t('confession_panel_description', lang))
+            .setColor(0x7289DA)
+            .setFooter({ text: t('confession_panel_footer', lang) })
+            .setTimestamp();
 
-    await interaction.reply({ content: "✅ Le panneau de confession a été créé !", ephemeral: true });
-  }
+        await interaction.channel.send({ embeds: [embed], components: [row] });
+        await interaction.reply({ content: t('confession_panel_created', lang), ephemeral: true });
+    }
 };

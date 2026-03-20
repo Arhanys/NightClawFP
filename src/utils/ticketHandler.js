@@ -1,57 +1,55 @@
 // src/utils/ticketHandler.js
-import { 
-    ActionRowBuilder, 
-    ButtonBuilder, 
-    ButtonStyle, 
-    ModalBuilder, 
-    TextInputBuilder, 
-    TextInputStyle, 
-    EmbedBuilder 
+import {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    EmbedBuilder
 } from "discord.js";
 import { getServerSettings } from './serverSettings.js';
+import { t } from './i18n.js';
 
 export async function handleTicketButton(interaction) {
     const { customId, guild, user } = interaction;
 
-    // "Open Ticket" button → show modal for reason
+    const settings = await getServerSettings(guild.id);
+    const lang = settings.language || 'en';
+
     if (customId === "ticket_open") {
-        // Check if user already has a ticket
         const existing = guild.channels.cache.find(c => c.name === `ticket-${user.id}`);
         if (existing) {
-            return interaction.reply({ content: "❌ You already have an open ticket!", ephemeral: true });
+            return interaction.reply({ content: t('ticket_already_open', lang), ephemeral: true });
         }
 
-        // Create modal
         const modal = new ModalBuilder()
             .setCustomId('ticket_reason_modal')
-            .setTitle('Open a Ticket');
+            .setTitle(t('ticket_modal_title', lang));
 
         const reasonInput = new TextInputBuilder()
             .setCustomId('ticket_reason')
-            .setLabel("Reason for opening this ticket")
+            .setLabel(t('ticket_reason_label', lang))
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Describe your issue or question...")
+            .setPlaceholder(t('ticket_reason_placeholder', lang))
             .setRequired(true);
 
         const row = new ActionRowBuilder().addComponents(reasonInput);
         modal.addComponents(row);
 
-        // Show the modal
         await interaction.showModal(modal);
     }
 
-    // "Close Ticket" button → only admins/mods
     else if (customId === "ticket_close") {
         if (!interaction.member.permissions.has('ManageChannels')) {
-            return interaction.reply({ content: "❌ You do not have permission to close this ticket.", ephemeral: true });
+            return interaction.reply({ content: t('ticket_no_close_perm', lang), ephemeral: true });
         }
 
-        await interaction.reply({ content: "🗑️ Closing ticket...", ephemeral: true });
+        await interaction.reply({ content: t('ticket_closing', lang), ephemeral: true });
         await interaction.channel.delete();
     }
 }
 
-// Handle modal submission
 export async function handleTicketModal(interaction) {
     if (!interaction.isModalSubmit()) return;
     if (interaction.customId !== 'ticket_reason_modal') return;
@@ -61,29 +59,18 @@ export async function handleTicketModal(interaction) {
     const guild = interaction.guild;
     const guildId = guild.id;
 
-    // Get server settings
     const settings = await getServerSettings(guildId);
+    const lang = settings.language || 'en';
 
-    // Find category
     const category = guild.channels.cache.find(c => c.name === "Support 🤝" && c.type === 4);
-    if (!category) return interaction.reply({ content: "⚠ Ticket category not found!", ephemeral: true });
+    if (!category) return interaction.reply({ content: t('ticket_category_not_found', lang), ephemeral: true });
 
-    // Build permission overwrites
     const permissionOverwrites = [
-        { 
-            id: guild.id, 
-            deny: ['ViewChannel', 'SendMessages'] 
-        },
-        { 
-            id: user.id, 
-            allow: ['ViewChannel', 'SendMessages'], 
-            deny: ['ManageChannels'] 
-        }
+        { id: guild.id, deny: ['ViewChannel', 'SendMessages'] },
+        { id: user.id, allow: ['ViewChannel', 'SendMessages'], deny: ['ManageChannels'] }
     ];
 
-    // Add moderator role permissions if configured
     if (settings.mod_role_id) {
-        // Verify the role exists and is cached
         const modRole = guild.roles.cache.get(settings.mod_role_id);
         if (modRole) {
             permissionOverwrites.push({
@@ -93,42 +80,38 @@ export async function handleTicketModal(interaction) {
         }
     }
 
-    // Create ticket channel
     const ticketChannel = await guild.channels.create({
         name: `ticket-${user.username}`.toLowerCase(),
-        type: 0, // Text channel
+        type: 0,
         parent: category.id,
-        permissionOverwrites: permissionOverwrites
+        permissionOverwrites
     });
 
-    // Embed for the ticket
     const embed = new EmbedBuilder()
-        .setTitle(`🎫 Ticket for ${user.username}`)
-        .setDescription(`Your ticket has been created. A moderator will assist you shortly.`)
+        .setTitle(t('ticket_embed_title', lang, { username: user.username }))
+        .setDescription(t('ticket_embed_desc', lang))
         .addFields(
-            { name: "👤 User", value: `${user}`, inline: true },
-            { name: "📌 Reason", value: reason, inline: false }
+            { name: t('ticket_field_user', lang), value: `${user}`, inline: true },
+            { name: t('ticket_field_reason', lang), value: reason, inline: false }
         )
         .setColor("Purple")
         .setTimestamp();
 
-    // Add close button
     const closeRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
             .setCustomId('ticket_close')
-            .setLabel('Close Ticket')
+            .setLabel(t('ticket_btn_close', lang))
             .setStyle(ButtonStyle.Danger)
     );
 
     await ticketChannel.send({ embeds: [embed], components: [closeRow] });
-    
-    // Ping moderators if role is configured
+
     if (settings.mod_role_id) {
         const modRole = guild.roles.cache.get(settings.mod_role_id);
         if (modRole) {
             await ticketChannel.send(`<@&${settings.mod_role_id}>`);
         }
     }
-    
-    await interaction.reply({ content: `✅ Your ticket has been created: ${ticketChannel}`, ephemeral: true });
+
+    await interaction.reply({ content: t('ticket_created', lang, { channel: ticketChannel.toString() }), ephemeral: true });
 }

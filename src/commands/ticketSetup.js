@@ -1,34 +1,32 @@
 import { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import { getServerSettings } from '../utils/serverSettings.js';
+import { t } from '../utils/i18n.js';
 
 export default {
-  data: new SlashCommandBuilder()
-    .setName("ticketpanel")
-    .setDescription("Set up the ticket panel in this channel")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels), // only admins can use
+    data: new SlashCommandBuilder()
+        .setName("ticketpanel")
+        .setDescription("Set up the ticket panel in this channel")
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-  async execute(interaction) {
-    // Create the "Open Ticket" button
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('ticket_open')
-        .setLabel('Open Ticket')
-        .setStyle(ButtonStyle.Primary)
-    );
+    async execute(interaction) {
+        const settings = await getServerSettings(interaction.guild.id);
+        const lang = settings.language || 'en';
 
-    // Create the embed
-    const embed = new EmbedBuilder()
-      .setTitle("🎫 Support Tickets")
-      .setDescription("Click the button below to create a private ticket. Our staff will assist you shortly!")
-      .setColor("Purple")
-      .setFooter({ text: "Support Panel" })
-      .setTimestamp();
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('ticket_open')
+                .setLabel(t('ticket_panel_btn', lang))
+                .setStyle(ButtonStyle.Primary)
+        );
 
-    // Send the permanent message
-    await interaction.channel.send({
-      embeds: [embed],
-      components: [row]
-    });
+        const embed = new EmbedBuilder()
+            .setTitle(t('ticket_panel_title', lang))
+            .setDescription(t('ticket_panel_description', lang))
+            .setColor("Purple")
+            .setFooter({ text: t('ticket_panel_footer', lang) })
+            .setTimestamp();
 
-    await interaction.reply({ content: "✅ Ticket panel has been created!", ephemeral: true });
-  }
+        await interaction.channel.send({ embeds: [embed], components: [row] });
+        await interaction.reply({ content: t('ticket_panel_created', lang), ephemeral: true });
+    }
 };

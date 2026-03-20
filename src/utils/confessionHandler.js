@@ -1,30 +1,35 @@
 // src/utils/confessionHandler.js
-import { 
-    ModalBuilder, 
-    TextInputBuilder, 
-    TextInputStyle, 
+import {
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
     ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle,
     EmbedBuilder
 } from "discord.js";
 import sql from '../db.js';
+import { getServerSettings } from './serverSettings.js';
+import { t } from './i18n.js';
 
 export async function handleConfessionButton(interaction) {
-    const { customId } = interaction;
+    const { customId, guild } = interaction;
 
     if (customId === "confession_anonymous" || customId === "confession_public") {
-        // Determine if it's anonymous or public
         const isAnonymous = customId === "confession_anonymous";
-        
-        // Create modal for confession
+
+        const settings = await getServerSettings(guild.id);
+        const lang = settings.language || 'en';
+
         const modal = new ModalBuilder()
             .setCustomId(`confession_modal_${isAnonymous ? 'anon' : 'public'}`)
-            .setTitle(isAnonymous ? '🎭 Confession anonyme' : '💬 Confession publique');
+            .setTitle(isAnonymous ? t('confession_modal_title_anon', lang) : t('confession_modal_title_public', lang));
 
         const confessionInput = new TextInputBuilder()
             .setCustomId('confession_text')
-            .setLabel("Ta confession")
+            .setLabel(t('confession_input_label', lang))
             .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder("Partage ce que tu as sur le cœur...")
+            .setPlaceholder(t('confession_input_placeholder', lang))
             .setRequired(true)
             .setMinLength(10)
             .setMaxLength(1000);
@@ -32,7 +37,6 @@ export async function handleConfessionButton(interaction) {
         const row = new ActionRowBuilder().addComponents(confessionInput);
         modal.addComponents(row);
 
-        // Show the modal
         await interaction.showModal(modal);
     }
 }
@@ -44,43 +48,65 @@ export async function handleConfessionModal(interaction) {
         const isAnonymous = customId.includes('anon');
         const confessionText = fields.getTextInputValue('confession_text');
 
-        // Create confession embed
+        const settings = await getServerSettings(guild.id);
+        const lang = settings.language || 'en';
+
         const embed = new EmbedBuilder()
-            .setTitle(isAnonymous ? "🎭 Confession anonyme" : "💬 Confession publique")
+            .setTitle(isAnonymous ? t('confession_embed_title_anon', lang) : t('confession_embed_title_public', lang))
             .setDescription(confessionText)
-            .setColor(isAnonymous ? 0x36393F : 0x7289DA) // Dark for anon, blurple for public
+            .setColor(isAnonymous ? 0x36393F : 0x7289DA)
             .setTimestamp();
 
         if (!isAnonymous) {
-            embed.setAuthor({ 
-                name: user.displayName, 
-                iconURL: user.displayAvatarURL() 
+            embed.setAuthor({
+                name: user.displayName,
+                iconURL: user.displayAvatarURL()
             });
         }
 
-        embed.setFooter({ 
-            text: isAnonymous ? "Anonyme • ID: " + Date.now() : "Confession publique de " + user.tag
+        embed.setFooter({
+            text: isAnonymous
+                ? t('confession_footer_anon', lang, { id: Date.now() })
+                : t('confession_footer_public', lang, { tag: user.tag })
         });
 
-        // Send confession to the same channel
-        await interaction.channel.send({ embeds: [embed] });
+        const confessionMessage = await interaction.channel.send({ embeds: [embed] });
 
-        // Confirm to user
-        await interaction.reply({ 
-            content: `✅ Ta confession ${isAnonymous ? 'anonyme' : 'publique'} a été publiée !`,
-            ephemeral: true 
+        // Start a thread on the confession for replies
+        const threadName = isAnonymous
+            ? t('confession_thread_anon', lang)
+            : t('confession_thread_public', lang, { name: user.displayName });
+        await confessionMessage.startThread({ name: threadName });
+
+        // Re-post the panel at the bottom so users can always see how to post
+        const panelRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('confession_anonymous')
+                .setLabel(t('confession_panel_btn_anon', lang))
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('confession_public')
+                .setLabel(t('confession_panel_btn_public', lang))
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        const panelEmbed = new EmbedBuilder()
+            .setTitle(t('confession_panel_title', lang))
+            .setDescription(t('confession_panel_description', lang))
+            .setColor(0x7289DA)
+            .setFooter({ text: t('confession_panel_footer', lang) })
+            .setTimestamp();
+
+        await interaction.channel.send({ embeds: [panelEmbed], components: [panelRow] });
+
+        await interaction.reply({
+            content: isAnonymous ? t('confession_published_anon', lang) : t('confession_published_public', lang),
+            ephemeral: true
         });
 
-        // Save to database
         await sql`
-            INSERT INTO confessions (text, is_anonymous, author_id, guild_id, created_at) 
-            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, ${interaction.guild.id}, NOW())
+            INSERT INTO confessions (text, is_anonymous, author_id, guild_id, created_at)
+            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, ${guild.id}, NOW())
         `;
     }
 }
-
-// TODO: Database function to implement later
-// async function logConfession(user, text, isAnonymous, guild) {
-//     // Log confession for moderation purposes
-//     // Include: userId, text, timestamp, isAnonymous, channelId
-// }
