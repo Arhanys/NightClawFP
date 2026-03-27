@@ -1,4 +1,3 @@
-// src/utils/ticketHandler.js
 import {
     ActionRowBuilder,
     ButtonBuilder,
@@ -6,23 +5,28 @@ import {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    EmbedBuilder
+    EmbedBuilder,
+    ButtonInteraction,
+    ModalSubmitInteraction,
+    TextChannel,
+    OverwriteResolvable,
+    PermissionFlagsBits
 } from "discord.js";
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
 import sql from '../db.js';
 import { generateAndUploadTranscript } from './transcriptHandler.js';
 
-export async function handleTicketButton(interaction) {
+export async function handleTicketButton(interaction: ButtonInteraction): Promise<void> {
     const { customId, guild, user } = interaction;
 
-    const settings = await getServerSettings(guild.id);
+    const settings = await getServerSettings(guild!.id);
     const lang = settings.language || 'en';
 
     if (customId === "ticket_open") {
-        const existing = guild.channels.cache.find(c => c.name === `ticket-${user.username}`.toLowerCase());
+        const existing = guild!.channels.cache.find(c => c.name === `ticket-${user.username}`.toLowerCase());
         if (existing) {
-            return interaction.reply({ content: t('ticket_already_open', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ticket_already_open', lang), ephemeral: true });
         }
 
         const modal = new ModalBuilder()
@@ -36,23 +40,23 @@ export async function handleTicketButton(interaction) {
             .setPlaceholder(t('ticket_reason_placeholder', lang))
             .setRequired(true);
 
-        const row = new ActionRowBuilder().addComponents(reasonInput);
+        const row = new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput);
         modal.addComponents(row);
 
         await interaction.showModal(modal);
     }
 
     else if (customId === "ticket_close") {
-        if (!interaction.member.permissions.has('ManageChannels')) {
-            return interaction.reply({ content: t('ticket_no_close_perm', lang), ephemeral: true });
+        if (!interaction.member || !('permissions' in interaction.member) || !(interaction.member.permissions as any).has('ManageChannels')) {
+            return void interaction.reply({ content: t('ticket_no_close_perm', lang), ephemeral: true });
         }
 
         await interaction.deferReply({ ephemeral: true });
 
-        const channel = interaction.channel;
-        const guild = interaction.guild;
+        const channel = interaction.channel as TextChannel;
+        const guild = interaction.guild!;
 
-        let transcriptUrl = null;
+        let transcriptUrl: string | null = null;
         try {
             transcriptUrl = await generateAndUploadTranscript(channel, interaction.user, guild);
         } catch (err) {
@@ -78,24 +82,24 @@ export async function handleTicketButton(interaction) {
     }
 }
 
-export async function handleTicketModal(interaction) {
+export async function handleTicketModal(interaction: ModalSubmitInteraction): Promise<void> {
     if (!interaction.isModalSubmit()) return;
     if (interaction.customId !== 'ticket_reason_modal') return;
 
     const reason = interaction.fields.getTextInputValue('ticket_reason');
     const user = interaction.user;
-    const guild = interaction.guild;
+    const guild = interaction.guild!;
     const guildId = guild.id;
 
     const settings = await getServerSettings(guildId);
     const lang = settings.language || 'en';
 
-    const category = interaction.channel.parent || null;
+    const category = (interaction.channel as TextChannel).parent ?? null;
 
-    const permissionOverwrites = [
-        { id: guild.id, deny: ['ViewChannel', 'SendMessages'] },
-        { id: user.id, allow: ['ViewChannel', 'SendMessages'], deny: ['ManageChannels'] },
-        { id: guild.members.me.id, allow: ['ViewChannel', 'SendMessages', 'ManageChannels', 'ReadMessageHistory'] }
+    const permissionOverwrites: OverwriteResolvable[] = [
+        { id: guild.id, deny: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+        { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages], deny: [PermissionFlagsBits.ManageChannels] },
+        { id: guild.members.me!.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels, PermissionFlagsBits.ReadMessageHistory] }
     ];
 
     if (settings.mod_role_id) {
@@ -103,7 +107,7 @@ export async function handleTicketModal(interaction) {
         if (modRole) {
             permissionOverwrites.push({
                 id: settings.mod_role_id,
-                allow: ['ViewChannel', 'SendMessages', 'ManageChannels']
+                allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels]
             });
         }
     }
@@ -113,7 +117,7 @@ export async function handleTicketModal(interaction) {
         type: 0,
         parent: category?.id ?? null,
         permissionOverwrites
-    });
+    }) as TextChannel;
 
     await sql`
         INSERT INTO tickets (guild_id, channel_id, channel_name, user_id)
@@ -127,10 +131,10 @@ export async function handleTicketModal(interaction) {
             { name: t('ticket_field_user', lang), value: `${user}`, inline: true },
             { name: t('ticket_field_reason', lang), value: reason, inline: false }
         )
-        .setColor("Purple")
+        .setColor('Purple' as any)
         .setTimestamp();
 
-    const closeRow = new ActionRowBuilder().addComponents(
+    const closeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId('ticket_close')
             .setLabel(t('ticket_btn_close', lang))

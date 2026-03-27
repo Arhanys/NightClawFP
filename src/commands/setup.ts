@@ -1,7 +1,8 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction } from "discord.js";
 import sql from '../db.js';
 import { clearServerSettingsCache } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -43,7 +44,7 @@ export default {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         const logChannel = interaction.options.getChannel("log_channel");
         const modRole = interaction.options.getRole("mod_role");
         const languageOption = interaction.options.getString("language");
@@ -51,18 +52,16 @@ export default {
         const appealInviteOption = interaction.options.getString("appeal_invite");
         const mainInviteOption = interaction.options.getString("main_invite");
 
-        // Fetch existing settings to get current language and fill partial updates
-        let existing = {};
+        let existing: Record<string, string> = {};
         try {
-            const rows = await sql`SELECT * FROM server_settings WHERE guild_id = ${interaction.guild.id}`;
+            const rows = await sql`SELECT * FROM server_settings WHERE guild_id = ${interaction.guild!.id}`;
             existing = rows[0] || {};
         } catch (error) {
             console.error('Setup Command Error:', error);
         }
 
-        const currentLang = existing.language || 'en';
+        const currentLang = (existing.language as 'en' | 'fr') || 'en';
 
-        // If no options provided, show current settings
         if (!logChannel && !modRole && !languageOption && !sourceGuildOption && !appealInviteOption && !mainInviteOption) {
             const lang = currentLang;
             const embed = new EmbedBuilder()
@@ -101,11 +100,10 @@ export default {
                 embed.setFooter({ text: t('setup_footer_updated', lang, { date: new Date(existing.updated_at).toLocaleString() }) });
             }
 
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return void interaction.reply({ embeds: [embed], ephemeral: true });
         }
 
-        // Determine effective language for the reply (new value takes effect immediately)
-        const newLang = languageOption || currentLang;
+        const newLang = (languageOption as 'en' | 'fr') || currentLang;
 
         try {
             const mergedLogChannel = logChannel?.id || existing.log_channel_id || null;
@@ -117,7 +115,7 @@ export default {
 
             await sql`
                 INSERT INTO server_settings (guild_id, log_channel_id, mod_role_id, language, source_guild_id, appeal_invite_url, main_invite_url, updated_at)
-                VALUES (${interaction.guild.id}, ${mergedLogChannel}, ${mergedModRole}, ${mergedLanguage}, ${mergedSourceGuild}, ${mergedAppealInvite}, ${mergedMainInvite}, NOW())
+                VALUES (${interaction.guild!.id}, ${mergedLogChannel}, ${mergedModRole}, ${mergedLanguage}, ${mergedSourceGuild}, ${mergedAppealInvite}, ${mergedMainInvite}, NOW())
                 ON CONFLICT (guild_id) DO UPDATE SET
                     log_channel_id = ${mergedLogChannel},
                     mod_role_id = ${mergedModRole},
@@ -128,7 +126,7 @@ export default {
                     updated_at = NOW()
             `;
 
-            clearServerSettingsCache(interaction.guild.id);
+            clearServerSettingsCache(interaction.guild!.id);
 
             const embed = new EmbedBuilder()
                 .setTitle(t('setup_title_updated', newLang))
@@ -146,14 +144,11 @@ export default {
 
             embed.setDescription(description);
 
-            return interaction.reply({ embeds: [embed], ephemeral: true });
+            return void interaction.reply({ embeds: [embed], ephemeral: true });
 
         } catch (error) {
             console.error('Setup Command Error:', error);
-            return interaction.reply({
-                content: t('setup_failed_update', newLang),
-                ephemeral: true
-            });
+            return void interaction.reply({ content: t('setup_failed_update', newLang), ephemeral: true });
         }
     }
-};
+} satisfies Command;

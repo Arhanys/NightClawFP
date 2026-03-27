@@ -1,8 +1,9 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -20,30 +21,27 @@ export default {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
-    async execute(interaction) {
-        const member = interaction.options.getMember("member");
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        const member = interaction.options.getMember("member") as GuildMember;
         const reason = interaction.options.getString("reason") || "No reason provided";
-        const guildId = interaction.guild.id;
+        const guildId = interaction.guild!.id;
 
         const settings = await getServerSettings(guildId);
         const lang = settings.language || 'en';
 
-        const hasPerms = await hasModeratorRole(interaction.member, guildId);
+        const hasPerms = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerms) {
-            return interaction.reply({
-                content: t('ban_no_permission', lang),
-                ephemeral: true
-            });
+            return void interaction.reply({ content: t('ban_no_permission', lang), ephemeral: true });
         }
 
         if (!member.bannable)
-            return interaction.reply({ content: t('ban_cannot_ban', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ban_cannot_ban', lang), ephemeral: true });
 
         try {
             try {
                 const dmEmbed = new EmbedBuilder()
                     .setTitle(t('dm_ban_title', lang))
-                    .setDescription(t('dm_ban_body', lang, { server: interaction.guild.name, reason }))
+                    .setDescription(t('dm_ban_body', lang, { server: interaction.guild!.name, reason }))
                     .setColor(0xFF0000)
                     .setTimestamp();
                 if (settings.appeal_invite_url) {
@@ -59,7 +57,7 @@ export default {
                 action: 'ban',
                 target_id: member.user.id,
                 moderator_id: interaction.user.id,
-                reason: reason,
+                reason,
             });
 
             await interaction.reply({ content: t('ban_success', lang, { tag: member.user.tag, reason }), ephemeral: true });
@@ -75,21 +73,16 @@ export default {
                 .setTimestamp();
 
             if (settings.log_channel_id) {
-                const logChannel = interaction.guild.channels.cache.get(settings.log_channel_id);
-                if (logChannel) {
+                const logChannel = interaction.guild!.channels.cache.get(settings.log_channel_id);
+                if (logChannel?.isTextBased()) {
                     await logChannel.send({ embeds: [successEmbed] });
                 }
             } else {
-                await sendLog(interaction.guild, {
-                    action: "Ban",
-                    target: member.user,
-                    moderator: interaction.user,
-                    reason: reason
-                });
+                await sendLog(interaction.guild!, { action: "Ban", target: member.user, moderator: interaction.user, reason });
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: t('ban_failed', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ban_failed', lang), ephemeral: true });
         }
     }
-};
+} satisfies Command;

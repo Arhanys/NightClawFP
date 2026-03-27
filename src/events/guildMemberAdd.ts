@@ -1,10 +1,11 @@
+import { GuildMember, Client } from "discord.js";
 import sql from '../db.js';
+import type { Event } from '../types/index.js';
 
 export default {
     name: 'guildMemberAdd',
 
-    async execute(member, client) {
-        // When a user rejoins the main server, kick them from the appeal server
+    async execute(member: GuildMember, client: Client): Promise<void> {
         const [appeal] = await sql`
             SELECT * FROM ban_appeals
             WHERE source_guild_id = ${member.guild.id} AND user_id = ${member.user.id} AND status = 'accepted'
@@ -23,4 +24,4 @@ export default {
             // Appeal guild inaccessible or user already left
         }
     }
-};
+} satisfies Event;

@@ -1,7 +1,8 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -14,27 +15,24 @@ export default {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-    async execute(interaction) {
-        const member = interaction.options.getMember("member");
-        const guildId = interaction.guild.id;
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        const member = interaction.options.getMember("member") as GuildMember;
+        const guildId = interaction.guild!.id;
 
         const settings = await getServerSettings(guildId);
         const lang = settings.language || 'en';
 
-        const hasPerms = await hasModeratorRole(interaction.member, guildId);
+        const hasPerms = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerms) {
-            return interaction.reply({
-                content: t('unmute_no_permission', lang),
-                ephemeral: true
-            });
+            return void interaction.reply({ content: t('unmute_no_permission', lang), ephemeral: true });
         }
 
         if (!member) {
-            return interaction.reply({ content: t('member_not_found', lang), ephemeral: true });
+            return void interaction.reply({ content: t('member_not_found', lang), ephemeral: true });
         }
 
         if (!member.isCommunicationDisabled()) {
-            return interaction.reply({ content: t('unmute_not_muted', lang), ephemeral: true });
+            return void interaction.reply({ content: t('unmute_not_muted', lang), ephemeral: true });
         }
 
         try {
@@ -52,21 +50,16 @@ export default {
                 .setTimestamp();
 
             if (settings.log_channel_id) {
-                const logChannel = interaction.guild.channels.cache.get(settings.log_channel_id);
-                if (logChannel) {
+                const logChannel = interaction.guild!.channels.cache.get(settings.log_channel_id);
+                if (logChannel?.isTextBased()) {
                     await logChannel.send({ embeds: [successEmbed] });
                 }
             } else {
-                await sendLog(interaction.guild, {
-                    action: "Unmute",
-                    target: member.user,
-                    moderator: interaction.user,
-                });
+                await sendLog(interaction.guild!, { action: "Unmute", target: member.user, moderator: interaction.user });
             }
-
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: t('unmute_failed', lang), ephemeral: true });
+            return void interaction.reply({ content: t('unmute_failed', lang), ephemeral: true });
         }
     }
-};
+} satisfies Command;

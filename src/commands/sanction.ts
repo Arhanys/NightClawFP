@@ -1,7 +1,8 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, User, ButtonInteraction } from "discord.js";
 import { getServerSettings } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
 import sql from '../db.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -14,25 +15,30 @@ export default {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-    async execute(interaction) {
-        const targetUser = interaction.options.getUser("user");
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        const targetUser = interaction.options.getUser("user") as User;
         await showSanctionPage(interaction, targetUser, 0, false);
     }
-};
+} satisfies Command;
 
 export { showSanctionPage };
 
-async function showSanctionPage(interaction, targetUser, page, isUpdate = false) {
+async function showSanctionPage(
+    interaction: ChatInputCommandInteraction | ButtonInteraction,
+    targetUser: User,
+    page: number,
+    isUpdate: boolean = false
+): Promise<void> {
     const SANCTIONS_PER_PAGE = 15;
     const offset = page * SANCTIONS_PER_PAGE;
 
-    const settings = await getServerSettings(interaction.guild.id);
+    const settings = await getServerSettings(interaction.guild!.id);
     const lang = settings.language || 'en';
     const locale = lang === 'fr' ? 'fr-FR' : 'en-US';
 
     try {
         const totalResult = await sql`
-            SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${targetUser.id} AND guild_id = ${interaction.guild.id}
+            SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${targetUser.id} AND guild_id = ${interaction.guild!.id}
         `;
         const totalSanctions = parseInt(totalResult[0].total);
         const totalPages = Math.ceil(totalSanctions / SANCTIONS_PER_PAGE);
@@ -40,7 +46,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
         const sanctions = await sql`
             SELECT id, action, moderator_id, reason, created_at
             FROM mod_logs
-            WHERE target_id = ${targetUser.id} AND guild_id = ${interaction.guild.id}
+            WHERE target_id = ${targetUser.id} AND guild_id = ${interaction.guild!.id}
             ORDER BY created_at DESC
             LIMIT ${SANCTIONS_PER_PAGE} OFFSET ${offset}
         `;
@@ -54,7 +60,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
             .setColor(sanctions.length > 0 ? 0xFF6B6B : 0x51CF66)
             .setTimestamp();
 
-        let components = [];
+        let components: ActionRowBuilder<ButtonBuilder>[] = [];
 
         if (totalSanctions === 0) {
             embed.setDescription(t('sanction_clean', lang));
@@ -62,7 +68,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
             const pageInfo = totalPages > 1 ? t('sanction_page_info', lang, { page: page + 1, total: totalPages }) : '';
             embed.setDescription(t('sanction_total', lang, { total: totalSanctions, pageInfo }));
 
-            const actionEmojis = { 'Ban': '⛔', 'Kick': '👢', 'Mute': '🔇' };
+            const actionEmojis: Record<string, string> = { 'ban': '⛔', 'kick': '👢', 'mute': '🔇', 'warn': '⚠️', 'unmute': '🔊' };
 
             let sanctionText = "";
             for (let i = 0; i < sanctions.length; i++) {
@@ -78,7 +84,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
 
             embed.addFields({ name: t('sanction_field_actions', lang), value: sanctionText, inline: false });
 
-            const row1 = new ActionRowBuilder();
+            const row1 = new ActionRowBuilder<ButtonBuilder>();
 
             if (page > 0) {
                 row1.addComponents(
@@ -109,7 +115,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
         }
 
         if (isUpdate) {
-            await interaction.update({ embeds: [embed], components });
+            await (interaction as ButtonInteraction).update({ embeds: [embed], components });
         } else {
             await interaction.reply({ embeds: [embed], components, ephemeral: true });
         }
@@ -119,7 +125,7 @@ async function showSanctionPage(interaction, targetUser, page, isUpdate = false)
         const content = t('sanction_failed', lang);
 
         if (isUpdate) {
-            await interaction.update({ content, embeds: [], components: [] });
+            await (interaction as ButtonInteraction).update({ content, embeds: [], components: [] });
         } else {
             await interaction.reply({ content, ephemeral: true });
         }

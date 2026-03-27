@@ -1,53 +1,53 @@
-import { SlashCommandBuilder, PermissionFlagsBits } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, ChatInputCommandInteraction, GuildMember, TextChannel } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { getServerSettings } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName("clear")
         .setDescription("Delete messages from the channel")
         .addIntegerOption(option =>
-            option
-                .setName("amount")
+            option.setName("amount")
                 .setDescription("Number of messages to delete (1-100)")
                 .setMinValue(1)
                 .setMaxValue(100)
                 .setRequired(true)
         )
         .addStringOption(option =>
-            option
-                .setName("reason")
+            option.setName("reason")
                 .setDescription("Reason for clearing messages")
                 .setRequired(true)
         )
         .addUserOption(option =>
-            option
-                .setName("member")
+            option.setName("member")
                 .setDescription("Only delete messages from this member")
                 .setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         await interaction.deferReply({ ephemeral: true });
 
-        const amount = interaction.options.getInteger("amount");
-        const targetMember = interaction.options.getMember("member");
+        const amount = interaction.options.getInteger("amount") as number;
+        const targetMember = interaction.options.getMember("member") as GuildMember | null;
         const reason = interaction.options.getString("reason") ?? "No reason provided";
 
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
-        if (!interaction.channel.permissionsFor(interaction.guild.members.me)?.has(PermissionFlagsBits.ManageMessages)) {
-            return interaction.editReply({ content: t('clear_no_permission', lang) });
+        const channel = interaction.channel as TextChannel;
+
+        if (!channel.permissionsFor(interaction.guild!.members.me!)?.has(PermissionFlagsBits.ManageMessages)) {
+            return void interaction.editReply({ content: t('clear_no_permission', lang) });
         }
 
         let deletedCount = 0;
 
         try {
             if (targetMember) {
-                const messages = await interaction.channel.messages.fetch({ limit: 100 });
+                const messages = await channel.messages.fetch({ limit: 100 });
                 const targetMessages = messages
                     .filter(m => m.author.id === targetMember.id)
                     .first(amount);
@@ -62,7 +62,7 @@ export default {
                     }
                 }
             } else {
-                await interaction.channel.bulkDelete(amount, true);
+                await channel.bulkDelete(amount, true);
                 deletedCount = amount;
             }
 
@@ -73,11 +73,11 @@ export default {
 
             await interaction.editReply({ content: reply });
 
-            await sendLog(interaction.guild, {
+            await sendLog(interaction.guild!, {
                 action: "Clear Messages",
-                target: targetMember?.user || "Not specified",
+                target: targetMember?.user,
                 moderator: interaction.user,
-                reason: reason,
+                reason,
                 extra: `${deletedCount} message(s) deleted`,
             });
 
@@ -86,4 +86,4 @@ export default {
             await interaction.editReply({ content: t('clear_failed', lang) });
         }
     },
-};
+} satisfies Command;

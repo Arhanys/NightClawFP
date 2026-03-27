@@ -1,8 +1,16 @@
-import { EmbedBuilder } from "discord.js";
+import { EmbedBuilder, Guild, User } from "discord.js";
 import { getServerSettings } from "./serverSettings.js";
 import { t } from "./i18n.js";
 
-const actionKeyMap = {
+export interface LogData {
+    action: string;
+    target?: User;
+    moderator?: User;
+    reason?: string;
+    extra?: string | number;
+}
+
+const actionKeyMap: Record<string, string> = {
     'Ban': 'log_action_ban',
     'Kick': 'log_action_kick',
     'Warn': 'log_action_warn',
@@ -11,21 +19,18 @@ const actionKeyMap = {
     'Clear Messages': 'log_action_clear',
 };
 
-function getActionColor(action) {
-    const colors = {
+function getActionColor(action: string): number {
+    const colors: Record<string, number> = {
         'Ban': 0xFF0000,
         'Kick': 0xFF7F00,
         'Warn': 0xFFFF00,
         'Mute': 0x808080,
         'Unmute': 0x00FF00
     };
-    return colors[action] || 0x0099FF;
+    return colors[action] ?? 0x0099FF;
 }
 
-/**
- * Logs a moderation action to the log channel.
- */
-export async function sendLog(guild, { action, target, moderator, reason, extra }) {
+export async function sendLog(guild: Guild, { action, target, moderator, reason, extra }: LogData): Promise<void> {
     try {
         const settings = await getServerSettings(guild.id);
         const lang = settings.language || 'en';
@@ -36,7 +41,7 @@ export async function sendLog(guild, { action, target, moderator, reason, extra 
         }
 
         const channel = guild.channels.cache.get(settings.log_channel_id);
-        if (!channel) {
+        if (!channel || !channel.isTextBased()) {
             console.warn("⚠ No log channel found.");
             return;
         }

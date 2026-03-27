@@ -1,6 +1,7 @@
-import { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ChatInputCommandInteraction, TextChannel } from "discord.js";
 import { getServerSettings } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -8,11 +9,11 @@ export default {
         .setDescription("Set up the ticket panel in this channel")
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-    async execute(interaction) {
-        const settings = await getServerSettings(interaction.guild.id);
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
-        const row = new ActionRowBuilder().addComponents(
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setCustomId('ticket_open')
                 .setLabel(t('ticket_panel_btn', lang))
@@ -26,7 +27,7 @@ export default {
             .setFooter({ text: t('ticket_panel_footer', lang) })
             .setTimestamp();
 
-        await interaction.channel.send({ embeds: [embed], components: [row] });
+        await (interaction.channel as TextChannel).send({ embeds: [embed], components: [row] });
         await interaction.reply({ content: t('ticket_panel_created', lang), ephemeral: true });
     }
-};
+} satisfies Command;

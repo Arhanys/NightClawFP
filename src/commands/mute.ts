@@ -1,8 +1,9 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -25,25 +26,22 @@ export default {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
-    async execute(interaction) {
-        const member = interaction.options.getMember("member");
-        const time = interaction.options.getInteger("time");
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        const member = interaction.options.getMember("member") as GuildMember;
+        const time = interaction.options.getInteger("time") as number;
         const reason = interaction.options.getString("reason") || "No reason provided";
-        const guildId = interaction.guild.id;
+        const guildId = interaction.guild!.id;
 
         const settings = await getServerSettings(guildId);
         const lang = settings.language || 'en';
 
-        const hasPerms = await hasModeratorRole(interaction.member, guildId);
+        const hasPerms = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerms) {
-            return interaction.reply({
-                content: t('mute_no_permission', lang),
-                ephemeral: true
-            });
+            return void interaction.reply({ content: t('mute_no_permission', lang), ephemeral: true });
         }
 
         if (!member.moderatable)
-            return interaction.reply({ content: t('mute_cannot_mute', lang), ephemeral: true });
+            return void interaction.reply({ content: t('mute_cannot_mute', lang), ephemeral: true });
 
         const durationMs = time * 60 * 1000;
         const expiresAt = new Date(Date.now() + durationMs);
@@ -54,7 +52,7 @@ export default {
             try {
                 const dmEmbed = new EmbedBuilder()
                     .setTitle(t('dm_mute_title', lang))
-                    .setDescription(t('dm_mute_body', lang, { server: interaction.guild.name, reason, time }))
+                    .setDescription(t('dm_mute_body', lang, { server: interaction.guild!.name, reason, time }))
                     .setColor(0x808080)
                     .setTimestamp();
                 await member.user.send({ embeds: [dmEmbed] });
@@ -65,7 +63,7 @@ export default {
                 action: 'mute',
                 target_id: member.user.id,
                 moderator_id: interaction.user.id,
-                reason: reason,
+                reason,
             });
 
             await interaction.reply({ content: t('mute_success', lang, { tag: member.user.tag, time, reason }), ephemeral: true });
@@ -83,21 +81,16 @@ export default {
                 .setTimestamp();
 
             if (settings.log_channel_id) {
-                const logChannel = interaction.guild.channels.cache.get(settings.log_channel_id);
-                if (logChannel) {
+                const logChannel = interaction.guild!.channels.cache.get(settings.log_channel_id);
+                if (logChannel?.isTextBased()) {
                     await logChannel.send({ embeds: [successEmbed] });
                 }
             } else {
-                await sendLog(interaction.guild, {
-                    action: "Mute",
-                    target: member.user,
-                    moderator: interaction.user,
-                    reason: reason,
-                });
+                await sendLog(interaction.guild!, { action: "Mute", target: member.user, moderator: interaction.user, reason });
             }
         } catch (error) {
             console.error(error);
-            return interaction.reply({ content: t('mute_failed', lang), ephemeral: true });
+            return void interaction.reply({ content: t('mute_failed', lang), ephemeral: true });
         }
     }
-};
+} satisfies Command;

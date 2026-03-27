@@ -1,6 +1,7 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember, TextChannel } from "discord.js";
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
@@ -20,17 +21,17 @@ export default {
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
-    async execute(interaction) {
-        const seconds = interaction.options.getInteger("seconds");
-        const target = interaction.options.getChannel("channel") || interaction.channel;
-        const guildId = interaction.guild.id;
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
+        const seconds = interaction.options.getInteger("seconds") as number;
+        const target = (interaction.options.getChannel("channel") || interaction.channel) as TextChannel;
+        const guildId = interaction.guild!.id;
 
         const settings = await getServerSettings(guildId);
         const lang = settings.language || 'en';
 
-        const hasPerm = await hasModeratorRole(interaction.member, guildId);
+        const hasPerm = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerm) {
-            return interaction.reply({ content: t('slowmode_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('slowmode_no_permission', lang), ephemeral: true });
         }
 
         try {
@@ -52,4 +53,4 @@ export default {
             await interaction.reply({ content: t('slowmode_failed', lang), ephemeral: true });
         }
     }
-};
+} satisfies Command;

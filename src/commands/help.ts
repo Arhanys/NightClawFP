@@ -1,11 +1,12 @@
-import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction } from "discord.js";
+import type { Command } from '../types/index.js';
 
 export default {
     data: new SlashCommandBuilder()
         .setName("help")
         .setDescription("Get help and visit the official NightClaw dashboard"),
 
-    async execute(interaction) {
+    async execute(interaction: ChatInputCommandInteraction): Promise<void> {
         const embed = new EmbedBuilder()
             .setTitle("NightClaw — Help & Dashboard")
             .setDescription(
@@ -20,7 +21,7 @@ export default {
             .setFooter({ text: "nightclaw.dev" })
             .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setLabel("Open Dashboard")
                 .setURL("https://nightclaw.dev")
@@ -29,4 +30,4 @@ export default {
 
         await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
     }
-};
+} satisfies Command;

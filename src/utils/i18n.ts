@@ -1,4 +1,7 @@
-const translations = {
+type TranslationMap = Record<string, string>;
+type Translations = { en: TranslationMap; fr: TranslationMap };
+
+const translations: Translations = {
     en: {
         // Common
         no_reason: 'No reason provided',
@@ -415,49 +418,49 @@ const translations = {
         setup_failed_update: '❌ Impossible de mettre à jour les paramètres du serveur.',
         setup_source_guild: '🔗 **ID du serveur source :** `{id}`',
         setup_source_guild_none: '🔗 **ID du serveur source :** Non défini',
-        setup_appeal_invite: '🔓 **Invitation du serveur d\'appel :** {url}',
-        setup_appeal_invite_none: '🔓 **Invitation du serveur d\'appel :** Non définie',
+        setup_appeal_invite: "🔓 **Invitation du serveur d'appel :** {url}",
+        setup_appeal_invite_none: "🔓 **Invitation du serveur d'appel :** Non définie",
         setup_updated_source_guild: '🔗 **ID du serveur source :** `{id}`',
-        setup_updated_appeal_invite: '🔓 **Invitation du serveur d\'appel :** {url}',
+        setup_updated_appeal_invite: "🔓 **Invitation du serveur d'appel :** {url}",
         setup_main_invite: '🏠 **Invitation du serveur principal :** {url}',
         setup_main_invite_none: '🏠 **Invitation du serveur principal :** Non définie',
         setup_updated_main_invite: '🏠 **Invitation du serveur principal :** {url}',
 
         // Ban appeal panel/ticket
         appeal_panel_title: '🔨 Appel de bannissement',
-        appeal_panel_description: 'Avez-vous été banni de notre serveur principal ? Cliquez sur le bouton ci-dessous pour ouvrir un ticket d\'appel.',
-        appeal_panel_footer: 'Panneau d\'appel de bannissement',
+        appeal_panel_description: "Avez-vous été banni de notre serveur principal ? Cliquez sur le bouton ci-dessous pour ouvrir un ticket d'appel.",
+        appeal_panel_footer: "Panneau d'appel de bannissement",
         appeal_panel_btn: 'Contester mon bannissement',
-        appeal_panel_created: '✅ Le panneau d\'appel de bannissement a été créé !',
-        appeal_already_open: '❌ Vous avez déjà un ticket d\'appel ouvert !',
-        appeal_no_source_guild: '❌ Ce serveur d\'appel n\'est pas configuré. Un administrateur doit définir l\'ID du serveur source via `/setup`.',
+        appeal_panel_created: "✅ Le panneau d'appel de bannissement a été créé !",
+        appeal_already_open: "❌ Vous avez déjà un ticket d'appel ouvert !",
+        appeal_no_source_guild: "❌ Ce serveur d'appel n'est pas configuré. Un administrateur doit définir l'ID du serveur source via `/setup`.",
         appeal_no_ban_found: '❌ Aucun bannissement trouvé pour votre compte sur le serveur principal.',
         appeal_modal_title: 'Appel de bannissement',
         appeal_reason_label: 'Pourquoi ce bannissement devrait être levé ?',
-        appeal_reason_placeholder: 'Expliquez votre situation et pourquoi vous pensez que votre bannissement devrait être annulé...',
+        appeal_reason_placeholder: "Expliquez votre situation et pourquoi vous pensez que votre bannissement devrait être annulé...",
         appeal_embed_title: '🔨 Appel de bannissement — {tag}',
         appeal_field_ban_reason: '📌 Raison du bannissement',
-        appeal_field_appeal_reason: '📝 Raison de l\'appel',
+        appeal_field_appeal_reason: "📝 Raison de l'appel",
         appeal_field_status: '📊 Statut',
         appeal_status_open: '🟡 Ouvert',
         appeal_status_accepted: '🟢 Accepté',
         appeal_status_refused: '🔴 Refusé',
         appeal_btn_accept: '✅ Accepter',
         appeal_btn_refuse: '❌ Refuser',
-        appeal_btn_close: '🗑️ Fermer l\'appel',
-        appeal_created: '✅ Votre ticket d\'appel a été créé : {channel}',
-        appeal_accept_modal_title: 'Accepter l\'appel',
-        appeal_accept_reason_label: 'Raison de l\'acceptation',
+        appeal_btn_close: "🗑️ Fermer l'appel",
+        appeal_created: "✅ Votre ticket d'appel a été créé : {channel}",
+        appeal_accept_modal_title: "Accepter l'appel",
+        appeal_accept_reason_label: "Raison de l'acceptation",
         appeal_accepted_msg: '✅ Appel accepté. Voici votre invitation pour le serveur principal : {invite}',
         appeal_refused_msg: '❌ Votre appel a été refusé.',
-        appeal_no_permission: '❌ Vous n\'avez pas la permission de gérer les appels.',
+        appeal_no_permission: "❌ Vous n'avez pas la permission de gérer les appels.",
         appeal_cooldown_select: '⏳ Sélectionnez la durée avant que cet utilisateur puisse re-soumettre un appel :',
         appeal_cooldown_3d: '3 Jours',
         appeal_cooldown_1w: '1 Semaine',
         appeal_cooldown_2w: '2 Semaines',
         appeal_cooldown_1m: '1 Mois',
         appeal_cooldown_none: 'Pas de délai',
-        appeal_on_cooldown: '❌ Vous ne pouvez pas encore soumettre un nouvel appel. Veuillez attendre jusqu\'au {date}.',
+        appeal_on_cooldown: "❌ Vous ne pouvez pas encore soumettre un nouvel appel. Veuillez attendre jusqu'au {date}.",
         appeal_not_found: '❌ Aucun appel ouvert trouvé pour ce canal.',
         appeal_unban_failed: '⚠️ Appel accepté mais le débannissement automatique a échoué : {error}',
         appeal_log_accepted_title: '🟢 Appel de bannissement accepté',
@@ -476,7 +479,7 @@ const translations = {
     }
 };
 
-export function t(key, lang = 'en', vars = {}) {
+export function t(key: string, lang: 'en' | 'fr' = 'en', vars: Record<string, string | number> = {}): string {
     const str = translations[lang]?.[key] ?? translations['en'][key] ?? key;
-    return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] !== undefined ? vars[k] : `{${k}}`);
+    return str.replace(/\{(\w+)\}/g, (_: string, k: string) => vars[k] !== undefined ? String(vars[k]) : `{${k}}`);
 }

@@ -1,10 +1,11 @@
-import { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import { Guild, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import type { Event } from '../types/index.js';
 
 export default {
     name: "guildCreate",
     once: false,
 
-    async execute(guild) {
+    async execute(guild: Guild): Promise<void> {
         const embed = new EmbedBuilder()
             .setTitle("Thanks for adding NightClaw!")
             .setDescription(
@@ -42,7 +43,7 @@ export default {
             .setFooter({ text: "nightclaw.dev" })
             .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
+        const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setLabel("Open Dashboard")
                 .setURL("https://nightclaw.dev")
@@ -53,7 +54,6 @@ export default {
             const owner = await guild.fetchOwner();
             await owner.send({ embeds: [embed], components: [row] });
         } catch {
-            // Owner has DMs disabled — try posting to the system channel instead
             if (guild.systemChannel) {
                 try {
                     await guild.systemChannel.send({ embeds: [embed], components: [row] });
@@ -63,4 +63,4 @@ export default {
             }
         }
     }
-};
+} satisfies Event;

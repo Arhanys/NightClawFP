@@ -1,9 +1,9 @@
-import { EmbedBuilder } from 'discord.js';
+import { EmbedBuilder, TextChannel, Guild, User } from 'discord.js';
 import { createTranscript } from 'discord-html-transcripts';
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
 
-export async function generateAndUploadTranscript(channel, closedBy, guild) {
+export async function generateAndUploadTranscript(channel: TextChannel, closedBy: User, guild: Guild): Promise<string | null> {
     try {
         const settings = await getServerSettings(guild.id);
         const lang = settings.language || 'en';
@@ -14,12 +14,12 @@ export async function generateAndUploadTranscript(channel, closedBy, guild) {
         }
 
         const logChannel = guild.channels.cache.get(settings.log_channel_id);
-        if (!logChannel) {
+        if (!logChannel || !logChannel.isTextBased()) {
             console.warn('⚠ Log channel not found in cache, skipping transcript.');
             return null;
         }
 
-        const attachment = await createTranscript(channel, {
+        const attachment = await createTranscript(channel as any, {
             filename: `transcript-${channel.name}.html`,
             saveImages: false,
             poweredBy: false

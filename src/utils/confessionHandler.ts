@@ -1,4 +1,3 @@
-// src/utils/confessionHandler.js
 import {
     ModalBuilder,
     TextInputBuilder,
@@ -6,19 +5,21 @@ import {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle,
-    EmbedBuilder
+    EmbedBuilder,
+    ButtonInteraction,
+    ModalSubmitInteraction
 } from "discord.js";
 import sql from '../db.js';
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
 
-export async function handleConfessionButton(interaction) {
+export async function handleConfessionButton(interaction: ButtonInteraction): Promise<void> {
     const { customId, guild } = interaction;
 
     if (customId === "confession_anonymous" || customId === "confession_public") {
         const isAnonymous = customId === "confession_anonymous";
 
-        const settings = await getServerSettings(guild.id);
+        const settings = await getServerSettings(guild!.id);
         const lang = settings.language || 'en';
 
         const modal = new ModalBuilder()
@@ -34,21 +35,21 @@ export async function handleConfessionButton(interaction) {
             .setMinLength(10)
             .setMaxLength(1000);
 
-        const row = new ActionRowBuilder().addComponents(confessionInput);
+        const row = new ActionRowBuilder<TextInputBuilder>().addComponents(confessionInput);
         modal.addComponents(row);
 
         await interaction.showModal(modal);
     }
 }
 
-export async function handleConfessionModal(interaction) {
+export async function handleConfessionModal(interaction: ModalSubmitInteraction): Promise<void> {
     const { customId, fields, user, guild } = interaction;
 
     if (customId.startsWith('confession_modal_')) {
         const isAnonymous = customId.includes('anon');
         const confessionText = fields.getTextInputValue('confession_text');
 
-        const settings = await getServerSettings(guild.id);
+        const settings = await getServerSettings(guild!.id);
         const lang = settings.language || 'en';
 
         const embed = new EmbedBuilder()
@@ -70,16 +71,16 @@ export async function handleConfessionModal(interaction) {
                 : t('confession_footer_public', lang, { tag: user.tag })
         });
 
-        const confessionMessage = await interaction.channel.send({ embeds: [embed] });
+        const channel = interaction.channel!;
+        if (!channel.isTextBased() || channel.isDMBased()) return void interaction.reply({ content: t('confession_failed', lang), ephemeral: true });
+        const confessionMessage = await channel.send({ embeds: [embed] });
 
-        // Start a thread on the confession for replies
         const threadName = isAnonymous
             ? t('confession_thread_anon', lang)
             : t('confession_thread_public', lang, { name: user.displayName });
         await confessionMessage.startThread({ name: threadName });
 
-        // Re-post the panel at the bottom so users can always see how to post
-        const panelRow = new ActionRowBuilder().addComponents(
+        const panelRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder()
                 .setCustomId('confession_anonymous')
                 .setLabel(t('confession_panel_btn_anon', lang))
@@ -97,7 +98,7 @@ export async function handleConfessionModal(interaction) {
             .setFooter({ text: t('confession_panel_footer', lang) })
             .setTimestamp();
 
-        await interaction.channel.send({ embeds: [panelEmbed], components: [panelRow] });
+        await channel.send({ embeds: [panelEmbed], components: [panelRow] });
 
         await interaction.reply({
             content: isAnonymous ? t('confession_published_anon', lang) : t('confession_published_public', lang),
@@ -106,7 +107,7 @@ export async function handleConfessionModal(interaction) {
 
         await sql`
             INSERT INTO confessions (text, is_anonymous, author_id, guild_id, created_at)
-            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, ${guild.id}, NOW())
+            VALUES (${confessionText}, ${isAnonymous}, ${user.id}, ${guild!.id}, NOW())
         `;
     }
 }

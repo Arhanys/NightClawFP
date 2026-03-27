@@ -7,35 +7,38 @@ import {
     TextInputStyle,
     EmbedBuilder,
     ChannelType,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    ButtonInteraction,
+    ModalSubmitInteraction,
+    TextChannel
 } from "discord.js";
 import sql from '../db.js';
 import { getServerSettings, hasModeratorRole } from './serverSettings.js';
 import { t } from './i18n.js';
 
-export async function handleAppealButton(interaction) {
+export async function handleAppealButton(interaction: ButtonInteraction): Promise<void> {
     const { customId } = interaction;
 
     if (customId === 'appeal_open') {
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
         const [existingAppeal] = await sql`
-            SELECT id FROM ban_appeals WHERE user_id = ${interaction.user.id} AND appeal_guild_id = ${interaction.guild.id} AND status = 'open'
+            SELECT id FROM ban_appeals WHERE user_id = ${interaction.user.id} AND appeal_guild_id = ${interaction.guild!.id} AND status = 'open'
         `;
         if (existingAppeal) {
-            return interaction.reply({ content: t('appeal_already_open', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_already_open', lang), ephemeral: true });
         }
 
         const [cooldownAppeal] = await sql`
             SELECT cooldown_until FROM ban_appeals
-            WHERE user_id = ${interaction.user.id} AND appeal_guild_id = ${interaction.guild.id}
+            WHERE user_id = ${interaction.user.id} AND appeal_guild_id = ${interaction.guild!.id}
               AND status = 'refused' AND cooldown_until > NOW()
             ORDER BY updated_at DESC LIMIT 1
         `;
         if (cooldownAppeal) {
             const until = `<t:${Math.floor(new Date(cooldownAppeal.cooldown_until).getTime() / 1000)}:F>`;
-            return interaction.reply({ content: t('appeal_on_cooldown', lang, { date: until }), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_on_cooldown', lang, { date: until }), ephemeral: true });
         }
 
         const modal = new ModalBuilder()
@@ -49,16 +52,16 @@ export async function handleAppealButton(interaction) {
             .setPlaceholder(t('appeal_reason_placeholder', lang))
             .setRequired(true);
 
-        modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
+        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput));
         await interaction.showModal(modal);
 
     } else if (customId === 'appeal_accept') {
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
-        const hasPerm = await hasModeratorRole(interaction.member, interaction.guild.id);
+        const hasPerm = await hasModeratorRole(interaction.member as any, interaction.guild!.id);
         if (!hasPerm) {
-            return interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
         }
 
         const modal = new ModalBuilder()
@@ -71,31 +74,31 @@ export async function handleAppealButton(interaction) {
             .setStyle(TextInputStyle.Paragraph)
             .setRequired(true);
 
-        modal.addComponents(new ActionRowBuilder().addComponents(reasonInput));
+        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(reasonInput));
         await interaction.showModal(modal);
 
     } else if (customId === 'appeal_close') {
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
-        const hasPerm = await hasModeratorRole(interaction.member, interaction.guild.id);
+        const hasPerm = await hasModeratorRole(interaction.member as any, interaction.guild!.id);
         if (!hasPerm) {
-            return interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
         }
 
         await interaction.reply({ content: '🗑️ Closing appeal...', ephemeral: true });
-        await interaction.channel.delete();
+        await (interaction.channel as TextChannel).delete();
 
     } else if (customId === 'appeal_refuse') {
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
-        const hasPerm = await hasModeratorRole(interaction.member, interaction.guild.id);
+        const hasPerm = await hasModeratorRole(interaction.member as any, interaction.guild!.id);
         if (!hasPerm) {
-            return interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
         }
 
-        const cooldownRow = new ActionRowBuilder().addComponents(
+        const cooldownRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
             new ButtonBuilder().setCustomId('appeal_refuse_3d').setLabel(t('appeal_cooldown_3d', lang)).setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId('appeal_refuse_1w').setLabel(t('appeal_cooldown_1w', lang)).setStyle(ButtonStyle.Secondary),
             new ButtonBuilder().setCustomId('appeal_refuse_2w').setLabel(t('appeal_cooldown_2w', lang)).setStyle(ButtonStyle.Secondary),
@@ -105,17 +108,17 @@ export async function handleAppealButton(interaction) {
         await interaction.reply({ content: t('appeal_cooldown_select', lang), components: [cooldownRow], ephemeral: true });
 
     } else if (customId.startsWith('appeal_refuse_')) {
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
-        const cooldownMap = { appeal_refuse_3d: 3, appeal_refuse_1w: 7, appeal_refuse_2w: 14, appeal_refuse_1m: 30 };
+        const cooldownMap: Record<string, number> = { appeal_refuse_3d: 3, appeal_refuse_1w: 7, appeal_refuse_2w: 14, appeal_refuse_1m: 30 };
         const cooldownDays = cooldownMap[customId] ?? 0;
 
         await refuseAppeal(interaction, cooldownDays);
     }
 }
 
-export async function handleAppealModal(interaction) {
+export async function handleAppealModal(interaction: ModalSubmitInteraction): Promise<void> {
     if (interaction.customId === 'appeal_reason_modal') {
         await openAppeal(interaction);
     } else if (interaction.customId === 'appeal_accept_modal') {
@@ -123,16 +126,16 @@ export async function handleAppealModal(interaction) {
     }
 }
 
-async function openAppeal(interaction) {
+async function openAppeal(interaction: ModalSubmitInteraction): Promise<void> {
     const appealReason = interaction.fields.getTextInputValue('appeal_reason');
     const user = interaction.user;
-    const guild = interaction.guild;
+    const guild = interaction.guild!;
 
     const settings = await getServerSettings(guild.id);
     const lang = settings.language || 'en';
 
     if (!settings.source_guild_id) {
-        return interaction.reply({ content: t('appeal_no_source_guild', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_no_source_guild', lang), ephemeral: true });
     }
 
     const [banLog] = await sql`
@@ -142,7 +145,7 @@ async function openAppeal(interaction) {
     `;
 
     if (!banLog) {
-        return interaction.reply({ content: t('appeal_no_ban_found', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_no_ban_found', lang), ephemeral: true });
     }
 
     let category = guild.channels.cache.find(c => c.name === 'Ban Appeals 🔨' && c.type === ChannelType.GuildCategory);
@@ -162,7 +165,7 @@ async function openAppeal(interaction) {
         permissionOverwrites.push({
             id: settings.mod_role_id,
             allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels]
-        });
+        } as any);
     }
 
     const safeName = user.username.toLowerCase().replace(/[^a-z0-9]/g, '-').slice(0, 20);
@@ -171,7 +174,7 @@ async function openAppeal(interaction) {
         type: ChannelType.GuildText,
         parent: category.id,
         permissionOverwrites
-    });
+    }) as TextChannel;
 
     const banReason = banLog.reason || t('no_reason', lang);
 
@@ -186,7 +189,7 @@ async function openAppeal(interaction) {
         .setColor(0xFFAA00)
         .setTimestamp();
 
-    const actionRow = new ActionRowBuilder().addComponents(
+    const actionRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId('appeal_accept')
             .setLabel(t('appeal_btn_accept', lang))
@@ -211,20 +214,20 @@ async function openAppeal(interaction) {
     await interaction.reply({ content: t('appeal_created', lang, { channel: appealChannel.toString() }), ephemeral: true });
 }
 
-async function acceptAppeal(interaction) {
+async function acceptAppeal(interaction: ModalSubmitInteraction): Promise<void> {
     const decisionReason = interaction.fields.getTextInputValue('appeal_accept_reason');
     const staff = interaction.user;
-    const guild = interaction.guild;
+    const guild = interaction.guild!;
 
     const settings = await getServerSettings(guild.id);
     const lang = settings.language || 'en';
 
     const [appeal] = await sql`
-        SELECT * FROM ban_appeals WHERE channel_id = ${interaction.channel.id} AND status = 'open'
+        SELECT * FROM ban_appeals WHERE channel_id = ${interaction.channel!.id} AND status = 'open'
     `;
 
     if (!appeal) {
-        return interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
     }
 
     await interaction.deferReply({ ephemeral: true });
@@ -239,8 +242,8 @@ async function acceptAppeal(interaction) {
     if (sourceGuild) {
         try {
             await sourceGuild.bans.remove(appeal.user_id, decisionReason);
-        } catch (err) {
-            await interaction.channel.send(t('appeal_unban_failed', lang, { error: err.message }));
+        } catch (err: any) {
+            await (interaction.channel as TextChannel).send(t('appeal_unban_failed', lang, { error: err.message }));
         }
     }
 
@@ -248,11 +251,11 @@ async function acceptAppeal(interaction) {
 
     await sql`
         UPDATE ban_appeals SET status = 'accepted', reviewed_by = ${staff.id}, decision_reason = ${decisionReason}, updated_at = NOW()
-        WHERE channel_id = ${interaction.channel.id}
+        WHERE channel_id = ${interaction.channel!.id}
     `;
 
     try {
-        const originalMessage = await interaction.channel.messages.fetch(appeal.message_id);
+        const originalMessage = await (interaction.channel as TextChannel).messages.fetch(appeal.message_id);
         const updatedEmbed = EmbedBuilder.from(originalMessage.embeds[0])
             .setColor(0x57F287)
             .spliceFields(
@@ -267,26 +270,22 @@ async function acceptAppeal(interaction) {
         // message may have been deleted
     }
 
-    const closeRow = new ActionRowBuilder().addComponents(
+    const closeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId('appeal_close')
             .setLabel(t('appeal_btn_close', lang))
             .setStyle(ButtonStyle.Secondary)
     );
 
-    if (invite) {
-        await interaction.channel.send({ content: t('appeal_accepted_msg', lang, { invite }), components: [closeRow] });
-    } else {
-        await interaction.channel.send({ content: t('appeal_accepted_msg', lang, { invite: '(invite creation failed)' }), components: [closeRow] });
-    }
+    const inviteStr = invite ?? '(invite creation failed)';
+    await (interaction.channel as TextChannel).send({ content: t('appeal_accepted_msg', lang, { invite: inviteStr }), components: [closeRow] });
 
-    // Log to main server's log channel
     if (sourceGuild) {
         const sourceSettings = await getServerSettings(appeal.source_guild_id);
         if (sourceSettings.log_channel_id) {
             try {
                 const logChannel = sourceGuild.channels.cache.get(sourceSettings.log_channel_id);
-                if (logChannel) {
+                if (logChannel?.isTextBased()) {
                     const logEmbed = new EmbedBuilder()
                         .setTitle(t('appeal_log_accepted_title', sourceSettings.language || 'en'))
                         .addFields(
@@ -307,19 +306,19 @@ async function acceptAppeal(interaction) {
     await interaction.editReply({ content: '✅ Appeal accepted.' });
 }
 
-async function refuseAppeal(interaction, cooldownDays = 0) {
+async function refuseAppeal(interaction: ButtonInteraction, cooldownDays: number = 0): Promise<void> {
     const staff = interaction.user;
-    const guild = interaction.guild;
+    const guild = interaction.guild!;
 
     const settings = await getServerSettings(guild.id);
     const lang = settings.language || 'en';
 
     const [appeal] = await sql`
-        SELECT * FROM ban_appeals WHERE channel_id = ${interaction.channel.id} AND status = 'open'
+        SELECT * FROM ban_appeals WHERE channel_id = ${interaction.channel!.id} AND status = 'open'
     `;
 
     if (!appeal) {
-        return interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
     }
 
     await interaction.deferUpdate();
@@ -330,11 +329,11 @@ async function refuseAppeal(interaction, cooldownDays = 0) {
 
     await sql`
         UPDATE ban_appeals SET status = 'refused', reviewed_by = ${staff.id}, cooldown_until = ${cooldownUntil}, updated_at = NOW()
-        WHERE channel_id = ${interaction.channel.id}
+        WHERE channel_id = ${interaction.channel!.id}
     `;
 
     try {
-        const originalMessage = await interaction.channel.messages.fetch(appeal.message_id);
+        const originalMessage = await (interaction.channel as TextChannel).messages.fetch(appeal.message_id);
         const statusFieldIndex = originalMessage.embeds[0].fields.findIndex(f => f.name.includes('Status') || f.name.includes('Statut'));
         const updatedEmbed = EmbedBuilder.from(originalMessage.embeds[0])
             .setColor(0xED4245)
@@ -349,15 +348,14 @@ async function refuseAppeal(interaction, cooldownDays = 0) {
         // message may have been deleted
     }
 
-    const closeRow = new ActionRowBuilder().addComponents(
+    const closeRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
             .setCustomId('appeal_close')
             .setLabel(t('appeal_btn_close', lang))
             .setStyle(ButtonStyle.Secondary)
     );
-    await interaction.channel.send({ content: t('appeal_refused_msg', lang), components: [closeRow] });
+    await (interaction.channel as TextChannel).send({ content: t('appeal_refused_msg', lang), components: [closeRow] });
 
-    // Log to main server's log channel
     let sourceGuild;
     try {
         sourceGuild = await interaction.client.guilds.fetch(appeal.source_guild_id);
@@ -370,7 +368,7 @@ async function refuseAppeal(interaction, cooldownDays = 0) {
         if (sourceSettings.log_channel_id) {
             try {
                 const logChannel = sourceGuild.channels.cache.get(sourceSettings.log_channel_id);
-                if (logChannel) {
+                if (logChannel?.isTextBased()) {
                     const logEmbed = new EmbedBuilder()
                         .setTitle(t('appeal_log_refused_title', sourceSettings.language || 'en'))
                         .addFields(

@@ -1,10 +1,15 @@
-// src/utils/sanctionHandler.js
-import { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } from "discord.js";
+import { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
 import sql from '../db.js';
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
 
-export async function logToDatabase({ guild_id, action, target_id, moderator_id, reason }) {
+export async function logToDatabase({ guild_id, action, target_id, moderator_id, reason }: {
+    guild_id: string;
+    action: string;
+    target_id: string;
+    moderator_id: string;
+    reason: string;
+}): Promise<void> {
     try {
         await sql`
             INSERT INTO mod_logs (guild_id, action, target_id, moderator_id, reason, created_at)
@@ -15,10 +20,10 @@ export async function logToDatabase({ guild_id, action, target_id, moderator_id,
     }
 }
 
-export async function handleSanctionButton(interaction) {
+export async function handleSanctionButton(interaction: ButtonInteraction): Promise<void> {
     const { customId } = interaction;
 
-    const settings = await getServerSettings(interaction.guild.id);
+    const settings = await getServerSettings(interaction.guild!.id);
     const lang = settings.language || 'en';
 
     if (customId.startsWith('sanction_view_')) {
@@ -39,7 +44,7 @@ export async function handleSanctionButton(interaction) {
             .setMinLength(1)
             .setMaxLength(4);
 
-        const row = new ActionRowBuilder().addComponents(sanctionInput);
+        const row = new ActionRowBuilder<TextInputBuilder>().addComponents(sanctionInput);
         modal.addComponents(row);
 
         await interaction.showModal(modal);
@@ -52,7 +57,7 @@ export async function handleSanctionButton(interaction) {
 
         const targetUser = await interaction.client.users.fetch(userId).catch(() => null);
         if (!targetUser) {
-            return interaction.reply({ content: t('sanction_user_not_found', lang), ephemeral: true });
+            return void interaction.reply({ content: t('sanction_user_not_found', lang), ephemeral: true });
         }
 
         const { showSanctionPage } = await import('../commands/sanction.js');
@@ -60,7 +65,7 @@ export async function handleSanctionButton(interaction) {
     }
 }
 
-export async function handleSanctionModal(interaction) {
+export async function handleSanctionModal(interaction: ModalSubmitInteraction): Promise<void> {
     const { customId, fields } = interaction;
 
     if (customId.startsWith('sanction_modal_')) {
@@ -69,21 +74,21 @@ export async function handleSanctionModal(interaction) {
         const page = parseInt(parts[1]) || 0;
         const sanctionNumber = parseInt(fields.getTextInputValue('sanction_number'));
 
-        const settings = await getServerSettings(interaction.guild.id);
+        const settings = await getServerSettings(interaction.guild!.id);
         const lang = settings.language || 'en';
 
         if (isNaN(sanctionNumber) || sanctionNumber < 1) {
-            return interaction.reply({ content: t('sanction_invalid_number', lang), ephemeral: true });
+            return void interaction.reply({ content: t('sanction_invalid_number', lang), ephemeral: true });
         }
 
         try {
             const totalResult = await sql`
-                SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${userId} AND guild_id = ${interaction.guild.id}
+                SELECT COUNT(*) as total FROM mod_logs WHERE target_id = ${userId} AND guild_id = ${interaction.guild!.id}
             `;
             const totalSanctions = parseInt(totalResult[0].total);
 
             if (sanctionNumber > totalSanctions) {
-                return interaction.reply({
+                return void interaction.reply({
                     content: t('sanction_not_found_count', lang, { n: sanctionNumber, total: totalSanctions }),
                     ephemeral: true
                 });
@@ -92,13 +97,13 @@ export async function handleSanctionModal(interaction) {
             const sanction = await sql`
                 SELECT id, action, moderator_id, reason, created_at, target_id
                 FROM mod_logs
-                WHERE target_id = ${userId} AND guild_id = ${interaction.guild.id}
+                WHERE target_id = ${userId} AND guild_id = ${interaction.guild!.id}
                 ORDER BY created_at DESC
                 LIMIT 1 OFFSET ${sanctionNumber - 1}
             `;
 
             if (sanction.length === 0) {
-                return interaction.reply({
+                return void interaction.reply({
                     content: t('sanction_not_found', lang, { n: sanctionNumber }),
                     ephemeral: true
                 });
@@ -112,7 +117,7 @@ export async function handleSanctionModal(interaction) {
             const moderatorName = moderator ? moderator.displayName : t('unknown_moderator', lang);
             const targetName = targetUser ? targetUser.displayName : t('unknown_user', lang);
 
-            const actionEmojis = { 'ban': '⛔', 'kick': '👢', 'mute': '🔇', 'warn': '⚠️', 'unmute': '🔊' };
+            const actionEmojis: Record<string, string> = { 'ban': '⛔', 'kick': '👢', 'mute': '🔇', 'warn': '⚠️', 'unmute': '🔊' };
 
             const embed = new EmbedBuilder()
                 .setTitle(t('sanction_detail_title', lang, { emoji: actionEmojis[sanctionData.action] || '⚠️', n: sanctionNumber }))
