@@ -17,11 +17,6 @@ export default {
                   .setDescription("Role that can use moderation commands")
                   .setRequired(false)
         )
-        .addChannelOption(option =>
-            option.setName("confession_channel")
-                  .setDescription("Channel where confessions will be posted")
-                  .setRequired(false)
-        )
         .addStringOption(option =>
             option.setName("language")
                   .setDescription("Bot language for this server")
@@ -51,7 +46,6 @@ export default {
     async execute(interaction) {
         const logChannel = interaction.options.getChannel("log_channel");
         const modRole = interaction.options.getRole("mod_role");
-        const confessionChannel = interaction.options.getChannel("confession_channel");
         const languageOption = interaction.options.getString("language");
         const sourceGuildOption = interaction.options.getString("source_guild");
         const appealInviteOption = interaction.options.getString("appeal_invite");
@@ -69,7 +63,7 @@ export default {
         const currentLang = existing.language || 'en';
 
         // If no options provided, show current settings
-        if (!logChannel && !modRole && !confessionChannel && !languageOption && !sourceGuildOption && !appealInviteOption && !mainInviteOption) {
+        if (!logChannel && !modRole && !languageOption && !sourceGuildOption && !appealInviteOption && !mainInviteOption) {
             const lang = currentLang;
             const embed = new EmbedBuilder()
                 .setTitle(t('setup_title_view', lang))
@@ -88,10 +82,6 @@ export default {
                 description += existing.mod_role_id
                     ? t('setup_mod_role', lang, { id: existing.mod_role_id }) + '\n'
                     : t('setup_mod_role_none', lang) + '\n';
-
-                description += existing.confession_channel_id
-                    ? t('setup_confession_channel', lang, { id: existing.confession_channel_id }) + '\n'
-                    : t('setup_confession_channel_none', lang) + '\n';
 
                 description += t('setup_language', lang) + '\n';
 
@@ -120,19 +110,17 @@ export default {
         try {
             const mergedLogChannel = logChannel?.id || existing.log_channel_id || null;
             const mergedModRole = modRole?.id || existing.mod_role_id || null;
-            const mergedConfessionChannel = confessionChannel?.id || existing.confession_channel_id || null;
             const mergedLanguage = languageOption || currentLang;
             const mergedSourceGuild = sourceGuildOption !== null ? sourceGuildOption : (existing.source_guild_id || null);
             const mergedAppealInvite = appealInviteOption !== null ? appealInviteOption : (existing.appeal_invite_url || null);
             const mergedMainInvite = mainInviteOption !== null ? mainInviteOption : (existing.main_invite_url || null);
 
             await sql`
-                INSERT INTO server_settings (guild_id, log_channel_id, mod_role_id, confession_channel_id, language, source_guild_id, appeal_invite_url, main_invite_url, updated_at)
-                VALUES (${interaction.guild.id}, ${mergedLogChannel}, ${mergedModRole}, ${mergedConfessionChannel}, ${mergedLanguage}, ${mergedSourceGuild}, ${mergedAppealInvite}, ${mergedMainInvite}, NOW())
+                INSERT INTO server_settings (guild_id, log_channel_id, mod_role_id, language, source_guild_id, appeal_invite_url, main_invite_url, updated_at)
+                VALUES (${interaction.guild.id}, ${mergedLogChannel}, ${mergedModRole}, ${mergedLanguage}, ${mergedSourceGuild}, ${mergedAppealInvite}, ${mergedMainInvite}, NOW())
                 ON CONFLICT (guild_id) DO UPDATE SET
                     log_channel_id = ${mergedLogChannel},
                     mod_role_id = ${mergedModRole},
-                    confession_channel_id = ${mergedConfessionChannel},
                     language = ${mergedLanguage},
                     source_guild_id = ${mergedSourceGuild},
                     appeal_invite_url = ${mergedAppealInvite},
@@ -151,7 +139,6 @@ export default {
 
             if (logChannel) description += t('setup_updated_log_channel', newLang, { channel: logChannel.toString() }) + '\n';
             if (modRole) description += t('setup_updated_mod_role', newLang, { role: modRole.toString() }) + '\n';
-            if (confessionChannel) description += t('setup_updated_confession_channel', newLang, { channel: confessionChannel.toString() }) + '\n';
             if (languageOption) description += t('setup_updated_language', newLang) + '\n';
             if (sourceGuildOption) description += t('setup_updated_source_guild', newLang, { id: sourceGuildOption }) + '\n';
             if (appealInviteOption) description += t('setup_updated_appeal_invite', newLang, { url: appealInviteOption }) + '\n';

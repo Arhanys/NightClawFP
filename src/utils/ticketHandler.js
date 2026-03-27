@@ -20,7 +20,7 @@ export async function handleTicketButton(interaction) {
     const lang = settings.language || 'en';
 
     if (customId === "ticket_open") {
-        const existing = guild.channels.cache.find(c => c.name === `ticket-${user.id}`);
+        const existing = guild.channels.cache.find(c => c.name === `ticket-${user.username}`.toLowerCase());
         if (existing) {
             return interaction.reply({ content: t('ticket_already_open', lang), ephemeral: true });
         }
@@ -90,12 +90,12 @@ export async function handleTicketModal(interaction) {
     const settings = await getServerSettings(guildId);
     const lang = settings.language || 'en';
 
-    const category = guild.channels.cache.find(c => c.name === "Support 🤝" && c.type === 4);
-    if (!category) return interaction.reply({ content: t('ticket_category_not_found', lang), ephemeral: true });
+    const category = interaction.channel.parent || null;
 
     const permissionOverwrites = [
         { id: guild.id, deny: ['ViewChannel', 'SendMessages'] },
-        { id: user.id, allow: ['ViewChannel', 'SendMessages'], deny: ['ManageChannels'] }
+        { id: user.id, allow: ['ViewChannel', 'SendMessages'], deny: ['ManageChannels'] },
+        { id: guild.members.me.id, allow: ['ViewChannel', 'SendMessages', 'ManageChannels', 'ReadMessageHistory'] }
     ];
 
     if (settings.mod_role_id) {
@@ -111,7 +111,7 @@ export async function handleTicketModal(interaction) {
     const ticketChannel = await guild.channels.create({
         name: `ticket-${user.username}`.toLowerCase(),
         type: 0,
-        parent: category.id,
+        parent: category?.id ?? null,
         permissionOverwrites
     });
 

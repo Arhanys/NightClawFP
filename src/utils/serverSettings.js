@@ -69,7 +69,7 @@ export async function hasModeratorRole(member, guildId) {
     
     if (!settings.mod_role_id) {
         // No mod role configured, fallback to Discord permissions
-        return member.permissions.has(['ModerateMembers', 'BanMembers', 'KickMembers'].some(perm => member.permissions.has(perm)));
+        return ['ModerateMembers', 'BanMembers', 'KickMembers'].some(perm => member.permissions.has(perm));
     }
 
     // Check if user has the configured moderator role

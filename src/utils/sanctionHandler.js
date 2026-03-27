@@ -112,7 +112,7 @@ export async function handleSanctionModal(interaction) {
             const moderatorName = moderator ? moderator.displayName : t('unknown_moderator', lang);
             const targetName = targetUser ? targetUser.displayName : t('unknown_user', lang);
 
-            const actionEmojis = { 'Ban': '⛔', 'Kick': '👢', 'Mute': '🔇' };
+            const actionEmojis = { 'ban': '⛔', 'kick': '👢', 'mute': '🔇', 'warn': '⚠️', 'unmute': '🔊' };
 
             const embed = new EmbedBuilder()
                 .setTitle(t('sanction_detail_title', lang, { emoji: actionEmojis[sanctionData.action] || '⚠️', n: sanctionNumber }))
