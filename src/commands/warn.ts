@@ -48,22 +48,12 @@ export default {
                 reason,
             });
 
-            const existingUser = await sql`
-                SELECT warnings FROM users WHERE id = ${member.user.id} AND guild_id = ${guildId}
+            await sql`
+                INSERT INTO users (id, guild_id, username, warnings, created_at)
+                VALUES (${member.user.id}, ${guildId}, ${member.user.username}, 1, NOW())
+                ON CONFLICT (id, guild_id) DO UPDATE
+                SET warnings = users.warnings + 1, username = ${member.user.username}
             `;
-
-            if (existingUser.length > 0) {
-                await sql`
-                    UPDATE users
-                    SET warnings = warnings + 1, username = ${member.user.username}
-                    WHERE id = ${member.user.id} AND guild_id = ${guildId}
-                `;
-            } else {
-                await sql`
-                    INSERT INTO users (id, guild_id, username, warnings, created_at)
-                    VALUES (${member.user.id}, ${guildId}, ${member.user.username}, 1, NOW())
-                `;
-            }
 
             const [userRecord] = await sql`
                 SELECT warnings FROM users WHERE id = ${member.user.id} AND guild_id = ${guildId}
