@@ -103,6 +103,9 @@ const translations = {
         ticket_created: '✅ Your ticket has been created: {channel}',
         ticket_no_close_perm: '❌ You do not have permission to close this ticket.',
         ticket_closing: '🗑️ Closing ticket...',
+        ticket_transcript_log_title: '📄 Ticket Closed — Transcript',
+        ticket_transcript_field_channel: '📁 Channel',
+        ticket_transcript_field_closed_by: '🔒 Closed By',
 
         // Confession setup command
         confession_panel_btn_anon: '🎭 Anonymous Confession',
@@ -338,6 +341,9 @@ const translations = {
         ticket_created: '✅ Votre ticket a été créé : {channel}',
         ticket_no_close_perm: "❌ Vous n'avez pas la permission de fermer ce ticket.",
         ticket_closing: '🗑️ Fermeture du ticket...',
+        ticket_transcript_log_title: '📄 Ticket fermé — Transcription',
+        ticket_transcript_field_channel: '📁 Canal',
+        ticket_transcript_field_closed_by: '🔒 Fermé par',
 
         // Confession setup command
         confession_panel_btn_anon: '🎭 Confession anonyme',

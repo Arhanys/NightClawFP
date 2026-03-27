@@ -101,6 +101,21 @@ async function setupDatabase() {
       console.log('⚠️  Appeal columns already exist or error:', error.message);
     }
 
+    // Create tickets table
+    await sql`
+      CREATE TABLE IF NOT EXISTS tickets (
+        id SERIAL PRIMARY KEY,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        channel_name TEXT,
+        user_id TEXT NOT NULL,
+        opened_at TIMESTAMP DEFAULT NOW(),
+        closed_at TIMESTAMP,
+        closed_by TEXT,
+        transcript_url TEXT
+      )
+    `;
+
     console.log('✅ Database tables created successfully!');
     
   } catch (error) {

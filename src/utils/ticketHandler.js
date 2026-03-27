@@ -10,6 +10,8 @@ import {
 } from "discord.js";
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
+import sql from '../db.js';
+import { generateAndUploadTranscript } from './transcriptHandler.js';
 
 export async function handleTicketButton(interaction) {
     const { customId, guild, user } = interaction;
@@ -45,8 +47,34 @@ export async function handleTicketButton(interaction) {
             return interaction.reply({ content: t('ticket_no_close_perm', lang), ephemeral: true });
         }
 
-        await interaction.reply({ content: t('ticket_closing', lang), ephemeral: true });
-        await interaction.channel.delete();
+        await interaction.deferReply({ ephemeral: true });
+
+        const channel = interaction.channel;
+        const guild = interaction.guild;
+
+        let transcriptUrl = null;
+        try {
+            transcriptUrl = await generateAndUploadTranscript(channel, interaction.user, guild);
+        } catch (err) {
+            console.error('Transcript generation error:', err);
+        }
+
+        try {
+            await sql`
+                UPDATE tickets
+                SET closed_at = NOW(),
+                    closed_by = ${interaction.user.id},
+                    transcript_url = ${transcriptUrl}
+                WHERE channel_id = ${channel.id}
+                  AND guild_id = ${guild.id}
+                  AND closed_at IS NULL
+            `;
+        } catch (err) {
+            console.error('DB update error on ticket close:', err);
+        }
+
+        await interaction.editReply({ content: t('ticket_closing', lang) });
+        await channel.delete();
     }
 }
 
@@ -86,6 +114,11 @@ export async function handleTicketModal(interaction) {
         parent: category.id,
         permissionOverwrites
     });
+
+    await sql`
+        INSERT INTO tickets (guild_id, channel_id, channel_name, user_id)
+        VALUES (${guild.id}, ${ticketChannel.id}, ${ticketChannel.name}, ${user.id})
+    `;
 
     const embed = new EmbedBuilder()
         .setTitle(t('ticket_embed_title', lang, { username: user.username }))
