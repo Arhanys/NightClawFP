@@ -45,9 +45,12 @@ export default {
                     .setColor(0xFF0000)
                     .setTimestamp();
                 if (settings.appeal_invite_url) {
-                    dmEmbed.addFields({ name: '🔓 Appeal', value: t('dm_appeal_link', lang, { invite: settings.appeal_invite_url }) });
+                    dmEmbed.addFields({ name: '🔓 Appeal', value: t('dm_appeal_info', lang) });
                 }
-                await member.user.send({ embeds: [dmEmbed] });
+                await member.user.send({
+                    embeds: [dmEmbed],
+                    ...(settings.appeal_invite_url && { content: t('dm_appeal_link', lang, { invite: settings.appeal_invite_url }) })
+                });
             } catch {}
 
             await member.ban({ reason });

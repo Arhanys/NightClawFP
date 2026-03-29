@@ -222,15 +222,27 @@ async function acceptAppeal(interaction: ModalSubmitInteraction): Promise<void> 
     const settings = await getServerSettings(guild.id);
     const lang = settings.language || 'en';
 
-    const [appeal] = await sql`
-        SELECT * FROM ban_appeals WHERE channel_id = ${interaction.channel!.id} AND status = 'open'
+    const [existingAppeal] = await sql`
+        SELECT id FROM ban_appeals WHERE channel_id = ${interaction.channel!.id} AND status = 'open'
     `;
 
-    if (!appeal) {
+    if (!existingAppeal) {
         return void interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
     }
 
     await interaction.deferReply({ ephemeral: true });
+
+    // Atomically claim the appeal — only one concurrent call wins
+    const [appeal] = await sql`
+        UPDATE ban_appeals
+        SET status = 'accepted', reviewed_by = ${staff.id}, decision_reason = ${decisionReason}, updated_at = NOW()
+        WHERE channel_id = ${interaction.channel!.id} AND status = 'open'
+        RETURNING *
+    `;
+
+    if (!appeal) {
+        return void interaction.editReply({ content: t('appeal_not_found', lang) });
+    }
 
     let sourceGuild;
     try {
@@ -248,11 +260,6 @@ async function acceptAppeal(interaction: ModalSubmitInteraction): Promise<void> 
     }
 
     const invite = settings.main_invite_url || null;
-
-    await sql`
-        UPDATE ban_appeals SET status = 'accepted', reviewed_by = ${staff.id}, decision_reason = ${decisionReason}, updated_at = NOW()
-        WHERE channel_id = ${interaction.channel!.id}
-    `;
 
     try {
         const originalMessage = await (interaction.channel as TextChannel).messages.fetch(appeal.message_id);

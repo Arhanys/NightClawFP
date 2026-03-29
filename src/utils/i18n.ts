@@ -237,7 +237,8 @@ const translations: Translations = {
         dm_warn_body: 'You have been warned in **{server}**.\n📌 **Reason:** {reason}\n🔢 **Total warnings:** {count}',
         dm_mute_title: '🔇 You have been muted',
         dm_mute_body: 'You have been muted in **{server}** for **{time}** minute(s).\n📌 **Reason:** {reason}',
-        dm_appeal_link: 'You can appeal your ban here: {invite}',
+        dm_appeal_info: 'You can appeal your ban by joining the appeal server.',
+        dm_appeal_link: '{invite}',
     },
 
     fr: {
@@ -475,7 +476,8 @@ const translations: Translations = {
         dm_warn_body: 'Vous avez été averti dans **{server}**.\n📌 **Raison :** {reason}\n🔢 **Total des avertissements :** {count}',
         dm_mute_title: '🔇 Vous avez été rendu muet',
         dm_mute_body: 'Vous avez été rendu muet dans **{server}** pendant **{time}** minute(s).\n📌 **Raison :** {reason}',
-        dm_appeal_link: 'Vous pouvez contester votre bannissement ici : {invite}',
+        dm_appeal_info: 'Vous pouvez contester votre bannissement en rejoignant le serveur d\'appel.',
+        dm_appeal_link: '{invite}',
     }
 };
 
