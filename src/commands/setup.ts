@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, MessageFlags } from "discord.js";
 import sql from '../db.js';
 import { clearServerSettingsCache } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
@@ -100,7 +100,7 @@ export default {
                 embed.setFooter({ text: t('setup_footer_updated', lang, { date: new Date(existing.updated_at).toLocaleString() }) });
             }
 
-            return void interaction.reply({ embeds: [embed], ephemeral: true });
+            return void interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         }
 
         const newLang = (languageOption as 'en' | 'fr') || currentLang;
@@ -144,11 +144,11 @@ export default {
 
             embed.setDescription(description);
 
-            return void interaction.reply({ embeds: [embed], ephemeral: true });
+            return void interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
         } catch (error) {
             console.error('Setup Command Error:', error);
-            return void interaction.reply({ content: t('setup_failed_update', newLang), ephemeral: true });
+            return void interaction.reply({ content: t('setup_failed_update', newLang), flags: MessageFlags.Ephemeral });
         }
     }
 } satisfies Command;

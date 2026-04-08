@@ -1,4 +1,4 @@
-import { Interaction, Client } from "discord.js";
+import { Interaction, Client, MessageFlags } from "discord.js";
 import { handleTicketButton, handleTicketModal } from "../utils/ticketHandler.js";
 import { handleConfessionButton, handleConfessionModal } from "../utils/confessionHandler.js";
 import { handleSanctionButton, handleSanctionModal } from "../utils/sanctionHandler.js";
@@ -41,9 +41,9 @@ export default {
             if (!interaction.isRepliable()) return;
 
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: "❌ An error occurred while processing this interaction.", ephemeral: true });
+                await interaction.reply({ content: "❌ An error occurred while processing this interaction.", flags: MessageFlags.Ephemeral });
             } else {
-                await interaction.followUp({ content: "❌ An unexpected error occurred.", ephemeral: true });
+                await interaction.followUp({ content: "❌ An unexpected error occurred.", flags: MessageFlags.Ephemeral });
             }
         }
     }

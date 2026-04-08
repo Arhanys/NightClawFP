@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, User, ButtonInteraction } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, User, ButtonInteraction, MessageFlags } from "discord.js";
 import { getServerSettings } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
 import sql from '../db.js';
@@ -117,7 +117,7 @@ async function showSanctionPage(
         if (isUpdate) {
             await (interaction as ButtonInteraction).update({ embeds: [embed], components });
         } else {
-            await interaction.reply({ embeds: [embed], components, ephemeral: true });
+            await interaction.reply({ embeds: [embed], components, flags: MessageFlags.Ephemeral });
         }
 
     } catch (error) {
@@ -127,7 +127,7 @@ async function showSanctionPage(
         if (isUpdate) {
             await (interaction as ButtonInteraction).update({ content, embeds: [], components: [] });
         } else {
-            await interaction.reply({ content, ephemeral: true });
+            await interaction.reply({ content, flags: MessageFlags.Ephemeral });
         }
     }
 }

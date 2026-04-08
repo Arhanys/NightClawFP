@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember, TextChannel } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember, TextChannel, MessageFlags } from "discord.js";
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
 import type { Command } from '../types/index.js';
@@ -31,7 +31,7 @@ export default {
 
         const hasPerm = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerm) {
-            return void interaction.reply({ content: t('slowmode_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('slowmode_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
         try {
@@ -47,10 +47,10 @@ export default {
                 embed.setDescription(t('slowmode_set', lang, { channel: target.toString(), seconds }));
             }
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
         } catch (error) {
             console.error(error);
-            await interaction.reply({ content: t('slowmode_failed', lang), ephemeral: true });
+            await interaction.reply({ content: t('slowmode_failed', lang), flags: MessageFlags.Ephemeral });
         }
     }
 } satisfies Command;

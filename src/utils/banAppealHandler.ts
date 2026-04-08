@@ -10,7 +10,8 @@ import {
     PermissionFlagsBits,
     ButtonInteraction,
     ModalSubmitInteraction,
-    TextChannel
+    TextChannel,
+    MessageFlags
 } from "discord.js";
 import sql from '../db.js';
 import { getServerSettings, hasModeratorRole } from './serverSettings.js';
@@ -27,7 +28,7 @@ export async function handleAppealButton(interaction: ButtonInteraction): Promis
             SELECT id FROM ban_appeals WHERE user_id = ${interaction.user.id} AND appeal_guild_id = ${interaction.guild!.id} AND status = 'open'
         `;
         if (existingAppeal) {
-            return void interaction.reply({ content: t('appeal_already_open', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_already_open', lang), flags: MessageFlags.Ephemeral });
         }
 
         const [cooldownAppeal] = await sql`
@@ -38,7 +39,7 @@ export async function handleAppealButton(interaction: ButtonInteraction): Promis
         `;
         if (cooldownAppeal) {
             const until = `<t:${Math.floor(new Date(cooldownAppeal.cooldown_until).getTime() / 1000)}:F>`;
-            return void interaction.reply({ content: t('appeal_on_cooldown', lang, { date: until }), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_on_cooldown', lang, { date: until }), flags: MessageFlags.Ephemeral });
         }
 
         const modal = new ModalBuilder()
@@ -61,7 +62,7 @@ export async function handleAppealButton(interaction: ButtonInteraction): Promis
 
         const hasPerm = await hasModeratorRole(interaction.member as any, interaction.guild!.id);
         if (!hasPerm) {
-            return void interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
         const modal = new ModalBuilder()
@@ -83,10 +84,10 @@ export async function handleAppealButton(interaction: ButtonInteraction): Promis
 
         const hasPerm = await hasModeratorRole(interaction.member as any, interaction.guild!.id);
         if (!hasPerm) {
-            return void interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
-        await interaction.reply({ content: '🗑️ Closing appeal...', ephemeral: true });
+        await interaction.reply({ content: '🗑️ Closing appeal...', flags: MessageFlags.Ephemeral });
         await (interaction.channel as TextChannel).delete();
 
     } else if (customId === 'appeal_refuse') {
@@ -95,7 +96,7 @@ export async function handleAppealButton(interaction: ButtonInteraction): Promis
 
         const hasPerm = await hasModeratorRole(interaction.member as any, interaction.guild!.id);
         if (!hasPerm) {
-            return void interaction.reply({ content: t('appeal_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('appeal_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
         const cooldownRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -105,7 +106,7 @@ export async function handleAppealButton(interaction: ButtonInteraction): Promis
             new ButtonBuilder().setCustomId('appeal_refuse_1m').setLabel(t('appeal_cooldown_1m', lang)).setStyle(ButtonStyle.Danger)
         );
 
-        await interaction.reply({ content: t('appeal_cooldown_select', lang), components: [cooldownRow], ephemeral: true });
+        await interaction.reply({ content: t('appeal_cooldown_select', lang), components: [cooldownRow], flags: MessageFlags.Ephemeral });
 
     } else if (customId.startsWith('appeal_refuse_')) {
         const settings = await getServerSettings(interaction.guild!.id);
@@ -135,7 +136,7 @@ async function openAppeal(interaction: ModalSubmitInteraction): Promise<void> {
     const lang = settings.language || 'en';
 
     if (!settings.source_guild_id) {
-        return void interaction.reply({ content: t('appeal_no_source_guild', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_no_source_guild', lang), flags: MessageFlags.Ephemeral });
     }
 
     const [banLog] = await sql`
@@ -145,7 +146,7 @@ async function openAppeal(interaction: ModalSubmitInteraction): Promise<void> {
     `;
 
     if (!banLog) {
-        return void interaction.reply({ content: t('appeal_no_ban_found', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_no_ban_found', lang), flags: MessageFlags.Ephemeral });
     }
 
     let category = guild.channels.cache.find(c => c.name === 'Ban Appeals 🔨' && c.type === ChannelType.GuildCategory);
@@ -211,7 +212,7 @@ async function openAppeal(interaction: ModalSubmitInteraction): Promise<void> {
         VALUES (${user.id}, ${guild.id}, ${settings.source_guild_id}, ${appealReason}, ${banReason}, 'open', ${appealChannel.id}, ${message.id})
     `;
 
-    await interaction.reply({ content: t('appeal_created', lang, { channel: appealChannel.toString() }), ephemeral: true });
+    await interaction.reply({ content: t('appeal_created', lang, { channel: appealChannel.toString() }), flags: MessageFlags.Ephemeral });
 }
 
 async function acceptAppeal(interaction: ModalSubmitInteraction): Promise<void> {
@@ -227,10 +228,10 @@ async function acceptAppeal(interaction: ModalSubmitInteraction): Promise<void> 
     `;
 
     if (!existingAppeal) {
-        return void interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_not_found', lang), flags: MessageFlags.Ephemeral });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
     // Atomically claim the appeal — only one concurrent call wins
     const [appeal] = await sql`
@@ -325,7 +326,7 @@ async function refuseAppeal(interaction: ButtonInteraction, cooldownDays: number
     `;
 
     if (!appeal) {
-        return void interaction.reply({ content: t('appeal_not_found', lang), ephemeral: true });
+        return void interaction.reply({ content: t('appeal_not_found', lang), flags: MessageFlags.Ephemeral });
     }
 
     await interaction.deferUpdate();

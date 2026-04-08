@@ -10,7 +10,8 @@ import {
     ModalSubmitInteraction,
     TextChannel,
     OverwriteResolvable,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    MessageFlags
 } from "discord.js";
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
@@ -26,7 +27,7 @@ export async function handleTicketButton(interaction: ButtonInteraction): Promis
     if (customId === "ticket_open") {
         const existing = guild!.channels.cache.find(c => c.name === `ticket-${user.username}`.toLowerCase());
         if (existing) {
-            return void interaction.reply({ content: t('ticket_already_open', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ticket_already_open', lang), flags: MessageFlags.Ephemeral });
         }
 
         const modal = new ModalBuilder()
@@ -48,10 +49,10 @@ export async function handleTicketButton(interaction: ButtonInteraction): Promis
 
     else if (customId === "ticket_close") {
         if (!interaction.member || !('permissions' in interaction.member) || !(interaction.member.permissions as any).has('ManageChannels')) {
-            return void interaction.reply({ content: t('ticket_no_close_perm', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ticket_no_close_perm', lang), flags: MessageFlags.Ephemeral });
         }
 
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const channel = interaction.channel as TextChannel;
         const guild = interaction.guild!;
@@ -150,5 +151,5 @@ export async function handleTicketModal(interaction: ModalSubmitInteraction): Pr
         }
     }
 
-    await interaction.reply({ content: t('ticket_created', lang, { channel: ticketChannel.toString() }), ephemeral: true });
+    await interaction.reply({ content: t('ticket_created', lang, { channel: ticketChannel.toString() }), flags: MessageFlags.Ephemeral });
 }

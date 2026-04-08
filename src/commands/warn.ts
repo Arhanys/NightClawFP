@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember, MessageFlags } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
@@ -32,11 +32,11 @@ export default {
 
         const hasPerms = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerms) {
-            return void interaction.reply({ content: t('warn_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('warn_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
         if (!member) {
-            return void interaction.reply({ content: t('member_not_found', lang), ephemeral: true });
+            return void interaction.reply({ content: t('member_not_found', lang), flags: MessageFlags.Ephemeral });
         }
 
         try {
@@ -75,7 +75,7 @@ export default {
                 await member.user.send({ embeds: [dmEmbed] });
             } catch {}
 
-            await interaction.reply({ content: replyContent, ephemeral: true });
+            await interaction.reply({ content: replyContent, flags: MessageFlags.Ephemeral });
 
             const successEmbed = new EmbedBuilder()
                 .setTitle(t('warn_embed_title', lang))
@@ -98,7 +98,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return void interaction.reply({ content: t('warn_failed', lang), ephemeral: true });
+            return void interaction.reply({ content: t('warn_failed', lang), flags: MessageFlags.Ephemeral });
         }
     }
 } satisfies Command;

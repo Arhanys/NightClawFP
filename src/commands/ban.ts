@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember, MessageFlags } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { logToDatabase } from '../utils/sanctionHandler.js';
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
@@ -31,11 +31,13 @@ export default {
 
         const hasPerms = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerms) {
-            return void interaction.reply({ content: t('ban_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ban_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
         if (!member.bannable)
-            return void interaction.reply({ content: t('ban_cannot_ban', lang), ephemeral: true });
+            return void interaction.reply({ content: t('ban_cannot_ban', lang), flags: MessageFlags.Ephemeral });
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         try {
             try {
@@ -63,7 +65,7 @@ export default {
                 reason,
             });
 
-            await interaction.reply({ content: t('ban_success', lang, { tag: member.user.tag, reason }), ephemeral: true });
+            await interaction.editReply({ content: t('ban_success', lang, { tag: member.user.tag, reason }) });
 
             const successEmbed = new EmbedBuilder()
                 .setTitle(t('ban_embed_title', lang))
@@ -85,7 +87,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return void interaction.reply({ content: t('ban_failed', lang), ephemeral: true });
+            return void interaction.editReply({ content: t('ban_failed', lang) });
         }
     }
 } satisfies Command;

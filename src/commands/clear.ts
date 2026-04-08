@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, ChatInputCommandInteraction, GuildMember, TextChannel } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, ChatInputCommandInteraction, GuildMember, TextChannel, MessageFlags } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { getServerSettings } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
@@ -28,7 +28,7 @@ export default {
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
     async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-        await interaction.deferReply({ ephemeral: true });
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const amount = interaction.options.getInteger("amount") as number;
         const targetMember = interaction.options.getMember("member") as GuildMember | null;

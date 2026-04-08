@@ -7,7 +7,8 @@ import {
     ButtonStyle,
     EmbedBuilder,
     ButtonInteraction,
-    ModalSubmitInteraction
+    ModalSubmitInteraction,
+    MessageFlags
 } from "discord.js";
 import sql from '../db.js';
 import { getServerSettings } from './serverSettings.js';
@@ -72,7 +73,7 @@ export async function handleConfessionModal(interaction: ModalSubmitInteraction)
         });
 
         const channel = interaction.channel!;
-        if (!channel.isTextBased() || channel.isDMBased()) return void interaction.reply({ content: t('confession_failed', lang), ephemeral: true });
+        if (!channel.isTextBased() || channel.isDMBased()) return void interaction.reply({ content: t('confession_failed', lang), flags: MessageFlags.Ephemeral });
         const confessionMessage = await channel.send({ embeds: [embed] });
 
         const threadName = isAnonymous
@@ -102,7 +103,7 @@ export async function handleConfessionModal(interaction: ModalSubmitInteraction)
 
         await interaction.reply({
             content: isAnonymous ? t('confession_published_anon', lang) : t('confession_published_public', lang),
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
 
         await sql`

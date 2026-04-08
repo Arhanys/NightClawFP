@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, TextChannel } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChatInputCommandInteraction, TextChannel, MessageFlags } from "discord.js";
 import { getServerSettings } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
 import type { Command } from '../types/index.js';
@@ -27,6 +27,6 @@ export default {
         );
 
         await (interaction.channel as TextChannel).send({ embeds: [embed], components: [row] });
-        await interaction.reply({ content: t('appeal_panel_created', lang), ephemeral: true });
+        await interaction.reply({ content: t('appeal_panel_created', lang), flags: MessageFlags.Ephemeral });
     }
 } satisfies Command;

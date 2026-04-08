@@ -1,4 +1,4 @@
-import { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonInteraction, ModalSubmitInteraction } from "discord.js";
+import { EmbedBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ButtonInteraction, ModalSubmitInteraction, MessageFlags } from "discord.js";
 import sql from '../db.js';
 import { getServerSettings } from './serverSettings.js';
 import { t } from './i18n.js';
@@ -57,7 +57,7 @@ export async function handleSanctionButton(interaction: ButtonInteraction): Prom
 
         const targetUser = await interaction.client.users.fetch(userId).catch(() => null);
         if (!targetUser) {
-            return void interaction.reply({ content: t('sanction_user_not_found', lang), ephemeral: true });
+            return void interaction.reply({ content: t('sanction_user_not_found', lang), flags: MessageFlags.Ephemeral });
         }
 
         const { showSanctionPage } = await import('../commands/sanction.js');
@@ -78,7 +78,7 @@ export async function handleSanctionModal(interaction: ModalSubmitInteraction): 
         const lang = settings.language || 'en';
 
         if (isNaN(sanctionNumber) || sanctionNumber < 1) {
-            return void interaction.reply({ content: t('sanction_invalid_number', lang), ephemeral: true });
+            return void interaction.reply({ content: t('sanction_invalid_number', lang), flags: MessageFlags.Ephemeral });
         }
 
         try {
@@ -90,7 +90,7 @@ export async function handleSanctionModal(interaction: ModalSubmitInteraction): 
             if (sanctionNumber > totalSanctions) {
                 return void interaction.reply({
                     content: t('sanction_not_found_count', lang, { n: sanctionNumber, total: totalSanctions }),
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
@@ -105,7 +105,7 @@ export async function handleSanctionModal(interaction: ModalSubmitInteraction): 
             if (sanction.length === 0) {
                 return void interaction.reply({
                     content: t('sanction_not_found', lang, { n: sanctionNumber }),
-                    ephemeral: true
+                    flags: MessageFlags.Ephemeral
                 });
             }
 
@@ -131,11 +131,11 @@ export async function handleSanctionModal(interaction: ModalSubmitInteraction): 
                 )
                 .setTimestamp();
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
         } catch (error) {
             console.error('Sanction Detail Error:', error);
-            await interaction.reply({ content: t('sanction_detail_failed', lang), ephemeral: true });
+            await interaction.reply({ content: t('sanction_detail_failed', lang), flags: MessageFlags.Ephemeral });
         }
     }
 }

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember } from "discord.js";
+import { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChatInputCommandInteraction, GuildMember, MessageFlags } from "discord.js";
 import { sendLog } from "../utils/generateLog.js";
 import { getServerSettings, hasModeratorRole } from '../utils/serverSettings.js';
 import { t } from '../utils/i18n.js';
@@ -24,21 +24,21 @@ export default {
 
         const hasPerms = await hasModeratorRole(interaction.member as GuildMember, guildId);
         if (!hasPerms) {
-            return void interaction.reply({ content: t('unmute_no_permission', lang), ephemeral: true });
+            return void interaction.reply({ content: t('unmute_no_permission', lang), flags: MessageFlags.Ephemeral });
         }
 
         if (!member) {
-            return void interaction.reply({ content: t('member_not_found', lang), ephemeral: true });
+            return void interaction.reply({ content: t('member_not_found', lang), flags: MessageFlags.Ephemeral });
         }
 
         if (!member.isCommunicationDisabled()) {
-            return void interaction.reply({ content: t('unmute_not_muted', lang), ephemeral: true });
+            return void interaction.reply({ content: t('unmute_not_muted', lang), flags: MessageFlags.Ephemeral });
         }
 
         try {
             await member.timeout(null);
 
-            await interaction.reply({ content: t('unmute_success', lang, { tag: member.user.tag }), ephemeral: true });
+            await interaction.reply({ content: t('unmute_success', lang, { tag: member.user.tag }), flags: MessageFlags.Ephemeral });
 
             const successEmbed = new EmbedBuilder()
                 .setTitle(t('unmute_embed_title', lang))
@@ -59,7 +59,7 @@ export default {
             }
         } catch (error) {
             console.error(error);
-            return void interaction.reply({ content: t('unmute_failed', lang), ephemeral: true });
+            return void interaction.reply({ content: t('unmute_failed', lang), flags: MessageFlags.Ephemeral });
         }
     }
 } satisfies Command;
