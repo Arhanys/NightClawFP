@@ -51,6 +51,13 @@ async function setupDatabase(): Promise<void> {
         `;
 
         try {
+            await sql`ALTER TABLE server_settings ADD COLUMN IF NOT EXISTS ticket_panel_channel_id TEXT`;
+            console.log('✅ ticket_panel_channel_id column added to server_settings');
+        } catch (error) {
+            console.log('⚠️  ticket_panel_channel_id column already exists or error:', (error as Error).message);
+        }
+
+        try {
             await sql`ALTER TABLE server_settings ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en'`;
             console.log('✅ Language column added to server_settings');
         } catch (error) {
@@ -104,6 +111,19 @@ async function setupDatabase(): Promise<void> {
                 closed_at TIMESTAMP,
                 closed_by TEXT,
                 transcript_url TEXT
+            )
+        `;
+
+        await sql`
+            CREATE TABLE IF NOT EXISTS isolated_users (
+                id SERIAL PRIMARY KEY,
+                guild_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                channel_id TEXT NOT NULL,
+                moderator_id TEXT NOT NULL,
+                reason TEXT,
+                isolated_at TIMESTAMP DEFAULT NOW(),
+                UNIQUE(guild_id, user_id)
             )
         `;
 

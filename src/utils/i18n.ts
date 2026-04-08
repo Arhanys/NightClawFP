@@ -228,6 +228,19 @@ const translations: Translations = {
         appeal_log_accepted_title: '🟢 Ban Appeal Accepted',
         appeal_log_refused_title: '🔴 Ban Appeal Refused',
 
+        // Isolate
+        isolate_no_permission: '❌ You do not have permission to isolate members.',
+        isolate_cannot_isolate: '❌ I cannot isolate this member.',
+        isolate_already_isolated: '❌ This member is already isolated.',
+        isolate_success: '🔒 {tag} has been isolated. Channel: {channel}',
+        isolate_embed_title: '🔒 Isolated — {username}',
+        isolate_embed_desc: 'This member has been quarantined. They can only see this channel.',
+        isolate_btn_end: 'End Isolation',
+        isolate_failed: '❌ Failed to isolate the member.',
+        unisolate_no_permission: '❌ You do not have permission to end isolations.',
+        unisolate_not_found: '❌ No active isolation record found for this channel.',
+        unisolate_success: '✅ Isolation ended. Restoring channel access...',
+        unisolate_failed: '❌ Failed to end the isolation.',
         // Sanction DMs
         dm_ban_title: '⛔ You have been banned',
         dm_ban_body: 'You have been banned from **{server}**.\n📌 **Reason:** {reason}',
@@ -235,8 +248,6 @@ const translations: Translations = {
         dm_kick_body: 'You have been kicked from **{server}**.\n📌 **Reason:** {reason}',
         dm_warn_title: '⚠️ You have received a warning',
         dm_warn_body: 'You have been warned in **{server}**.\n📌 **Reason:** {reason}\n🔢 **Total warnings:** {count}',
-        dm_mute_title: '🔇 You have been muted',
-        dm_mute_body: 'You have been muted in **{server}** for **{time}** minute(s).\n📌 **Reason:** {reason}',
         dm_appeal_info: 'You can appeal your ban by joining the appeal server.',
         dm_appeal_link: '{invite}',
     },
@@ -467,6 +478,19 @@ const translations: Translations = {
         appeal_log_accepted_title: '🟢 Appel de bannissement accepté',
         appeal_log_refused_title: '🔴 Appel de bannissement refusé',
 
+        // Isolate
+        isolate_no_permission: "❌ Vous n'avez pas la permission d'isoler des membres.",
+        isolate_cannot_isolate: '❌ Je ne peux pas isoler ce membre.',
+        isolate_already_isolated: '❌ Ce membre est déjà isolé.',
+        isolate_success: '🔒 {tag} a été isolé. Canal : {channel}',
+        isolate_embed_title: '🔒 Isolé — {username}',
+        isolate_embed_desc: 'Ce membre a été mis en quarantaine. Il ne peut voir que ce canal.',
+        isolate_btn_end: "Terminer l'isolation",
+        isolate_failed: "❌ Impossible d'isoler le membre.",
+        unisolate_no_permission: "❌ Vous n'avez pas la permission de terminer les isolations.",
+        unisolate_not_found: "❌ Aucun enregistrement d'isolation actif trouvé pour ce canal.",
+        unisolate_success: "✅ Isolation terminée. Restauration de l'accès aux canaux...",
+        unisolate_failed: "❌ Impossible de terminer l'isolation.",
         // Sanction DMs
         dm_ban_title: '⛔ Vous avez été banni',
         dm_ban_body: 'Vous avez été banni de **{server}**.\n📌 **Raison :** {reason}',
@@ -474,8 +498,6 @@ const translations: Translations = {
         dm_kick_body: 'Vous avez été expulsé de **{server}**.\n📌 **Raison :** {reason}',
         dm_warn_title: '⚠️ Vous avez reçu un avertissement',
         dm_warn_body: 'Vous avez été averti dans **{server}**.\n📌 **Raison :** {reason}\n🔢 **Total des avertissements :** {count}',
-        dm_mute_title: '🔇 Vous avez été rendu muet',
-        dm_mute_body: 'Vous avez été rendu muet dans **{server}** pendant **{time}** minute(s).\n📌 **Raison :** {reason}',
         dm_appeal_info: 'Vous pouvez contester votre bannissement en rejoignant le serveur d\'appel.',
         dm_appeal_link: '{invite}',
     }

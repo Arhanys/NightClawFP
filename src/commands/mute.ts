@@ -49,15 +49,6 @@ export default {
         try {
             await member.timeout(durationMs, reason);
 
-            try {
-                const dmEmbed = new EmbedBuilder()
-                    .setTitle(t('dm_mute_title', lang))
-                    .setDescription(t('dm_mute_body', lang, { server: interaction.guild!.name, reason, time }))
-                    .setColor(0x808080)
-                    .setTimestamp();
-                await member.user.send({ embeds: [dmEmbed] });
-            } catch {}
-
             await logToDatabase({
                 guild_id: guildId,
                 action: 'mute',

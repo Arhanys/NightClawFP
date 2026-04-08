@@ -3,6 +3,7 @@ import { handleTicketButton, handleTicketModal } from "../utils/ticketHandler.js
 import { handleConfessionButton, handleConfessionModal } from "../utils/confessionHandler.js";
 import { handleSanctionButton, handleSanctionModal } from "../utils/sanctionHandler.js";
 import { handleAppealButton, handleAppealModal } from "../utils/banAppealHandler.js";
+import { handleIsolateButton } from "../utils/isolateHandler.js";
 import type { Event } from '../types/index.js';
 
 export default {
@@ -23,6 +24,8 @@ export default {
                     await handleSanctionButton(interaction);
                 } else if (interaction.customId.startsWith('appeal_')) {
                     await handleAppealButton(interaction);
+                } else if (interaction.customId.startsWith('isolate_')) {
+                    await handleIsolateButton(interaction);
                 }
             } else if (interaction.isModalSubmit()) {
                 if (interaction.customId.startsWith('ticket_')) {

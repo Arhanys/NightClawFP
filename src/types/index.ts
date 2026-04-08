@@ -20,6 +20,7 @@ export interface ServerSettings {
     source_guild_id: string | null;
     appeal_invite_url: string | null;
     main_invite_url: string | null;
+    ticket_panel_channel_id: string | null;
     created_at?: Date;
     updated_at?: Date;
 }

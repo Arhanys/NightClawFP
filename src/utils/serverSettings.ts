@@ -22,7 +22,8 @@ export async function getServerSettings(guildId: string): Promise<ServerSettings
             language: 'en' as const,
             source_guild_id: null,
             appeal_invite_url: null,
-            main_invite_url: null
+            main_invite_url: null,
+            ticket_panel_channel_id: null
         };
 
         settingsCache.set(guildId, { settings, timestamp: Date.now() });
@@ -37,7 +38,8 @@ export async function getServerSettings(guildId: string): Promise<ServerSettings
             language: 'en' as const,
             source_guild_id: null,
             appeal_invite_url: null,
-            main_invite_url: null
+            main_invite_url: null,
+            ticket_panel_channel_id: null
         };
     }
 }
